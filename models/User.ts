@@ -33,6 +33,16 @@ const UserSchema = new Schema(
       type: Number,
       default: 0,
     },
+    // New: Allow unlimited devices
+    allowMultipleDevices: {
+      type: Boolean,
+      default: true, // Changed to true for unlimited devices
+    },
+    // New: Track all HWIDs for this user (for multi-device support)
+    registeredHwids: {
+      type: [String],
+      default: [],
+    },
   },
   {
     timestamps: true,
