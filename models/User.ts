@@ -18,12 +18,12 @@ const UserSchema = new Schema(
     },
     hwid: {
       type: String,
-      default: null, // blank থাকবে প্রথমে
-      index: true, // দ্রুত সার্চের জন্য
+      default: null,
+      index: true,
     },
     hwidReset: {
       type: Boolean,
-      default: false, // HWID রিসেট রিকুয়েস্ট
+      default: false,
     },
     lastLoginIP: {
       type: String,
@@ -39,6 +39,25 @@ const UserSchema = new Schema(
   }
 );
 
-const User = models.User || model('User', UserSchema);
+// Settings Schema for Version Control
+const SettingsSchema = new Schema(
+  {
+    key: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    value: {
+      type: Schema.Types.Mixed,
+      required: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+export const User = models.User || model('User', UserSchema);
+export const Settings = models.Settings || model('Settings', SettingsSchema);
 
 export default User;
