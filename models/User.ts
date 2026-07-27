@@ -16,9 +16,26 @@ const UserSchema = new Schema(
       type: Date,
       required: true,
     },
+    hwid: {
+      type: String,
+      default: null, // blank থাকবে প্রথমে
+      index: true, // দ্রুত সার্চের জন্য
+    },
+    hwidReset: {
+      type: Boolean,
+      default: false, // HWID রিসেট রিকুয়েস্ট
+    },
+    lastLoginIP: {
+      type: String,
+      default: null,
+    },
+    loginCount: {
+      type: Number,
+      default: 0,
+    },
   },
   {
-    timestamps: true, // CreatedAt and UpdatedAt dates auto generate hobe
+    timestamps: true,
   }
 );
 

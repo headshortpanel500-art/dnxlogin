@@ -8,6 +8,10 @@ interface IUser {
   password?: string;
   expiresAt: string;
   createdAt: string;
+  hwid?: string | null;
+  hwidReset?: boolean;
+  loginCount?: number;
+  lastLoginIP?: string;
 }
 
 export default function Home() {
@@ -91,6 +95,7 @@ export default function Home() {
       setIsAuthenticated(false);
       setAdminUsername('');
       setAdminPassword('');
+      showToast('Logged out successfully');
     } catch (err) {
       showToast('Failed to logout', 'error');
     }
@@ -177,6 +182,29 @@ export default function Home() {
     }
   };
 
+  // HWID Reset Handler
+  const handleResetHwid = async (username: string) => {
+    if (!confirm(`Are you sure you want to reset HWID for "${username}"? This will allow login from any device.`)) return;
+    
+    try {
+      const res = await fetch('/api/admin/reset-hwid', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username }),
+      });
+      
+      const data = await res.json();
+      if (data.success) {
+        showToast(`HWID reset successful for ${username}!`, 'success');
+        fetchUsers();
+      } else {
+        showToast(data.error || 'Failed to reset HWID', 'error');
+      }
+    } catch (err) {
+      showToast('Error resetting HWID', 'error');
+    }
+  };
+
   const handleEdit = (user: IUser) => {
     setEditingId(user._id);
     setUsername(user.username);
@@ -201,11 +229,10 @@ export default function Home() {
     );
   }
 
-  // LOGIN SCREEN — ULTRA PREMIUM
+  // LOGIN SCREEN
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 font-sans relative overflow-hidden">
-        {/* Abstract background orbs */}
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
@@ -289,10 +316,9 @@ export default function Home() {
     );
   }
 
-  // ADMIN DASHBOARD — ULTRA PREMIUM
+  // ADMIN DASHBOARD
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-10 font-sans relative overflow-x-hidden selection:bg-indigo-500/30 selection:text-white">
-      {/* Ambient background orbs */}
       <div className="fixed -top-64 -left-64 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
       <div className="fixed -bottom-64 -right-64 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -325,13 +351,19 @@ export default function Home() {
               </h1>
             </div>
             <p className="text-slate-400 text-sm mt-1 ml-1 tracking-wide">
-              Secure credential management • real-time access control
+              Secure credential management • real-time access control • HWID protection
             </p>
           </div>
 
           <div className="flex items-center gap-4">
             <div className="bg-slate-900/80 backdrop-blur-sm border border-slate-800/60 px-5 py-3 rounded-2xl text-center shadow-xl">
-              <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Active credentials</p>
+              <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Registered Devices</p>
+              <p className="text-2xl font-bold text-emerald-300">
+                {users.filter(u => u.hwid && u.hwid !== 'null' && u.hwid !== '').length}
+              </p>
+            </div>
+            <div className="bg-slate-900/80 backdrop-blur-sm border border-slate-800/60 px-5 py-3 rounded-2xl text-center shadow-xl">
+              <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Active Credentials</p>
               <p className="text-2xl font-bold text-indigo-300">{users.length}</p>
             </div>
 
@@ -453,6 +485,7 @@ export default function Home() {
                 <tr className="bg-slate-950/40 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800/60">
                   <th className="p-4 pl-6 font-medium">Username</th>
                   <th className="p-4 font-medium">Password</th>
+                  <th className="p-4 font-medium">HWID</th>
                   <th className="p-4 font-medium">Status</th>
                   <th className="p-4 font-medium">Expires On</th>
                   <th className="p-4 text-right pr-6 font-medium">Actions</th>
@@ -461,7 +494,7 @@ export default function Home() {
               <tbody className="divide-y divide-slate-800/40">
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="p-8 text-center text-slate-500">
+                    <td colSpan={6} className="p-8 text-center text-slate-500">
                       <div className="flex items-center justify-center gap-3">
                         <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                         Loading credentials...
@@ -470,17 +503,33 @@ export default function Home() {
                   </tr>
                 ) : filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="p-8 text-center text-slate-500">
+                    <td colSpan={6} className="p-8 text-center text-slate-500">
                       No matching credentials found.
                     </td>
                   </tr>
                 ) : (
                   filteredUsers.map((user) => {
                     const isExpired = new Date(user.expiresAt) < new Date();
+                    const hasHwid = user.hwid && user.hwid !== 'null' && user.hwid !== '';
                     return (
                       <tr key={user._id} className="hover:bg-slate-800/30 transition duration-200 group">
                         <td className="p-4 pl-6 font-medium text-slate-200">{user.username}</td>
                         <td className="p-4 text-slate-400 font-mono text-xs">{user.password || '••••••••'}</td>
+                        <td className="p-4 text-slate-400 font-mono text-xs">
+                          {hasHwid ? (
+                            <span className="text-emerald-400" title={`Full HWID: ${user.hwid}`}>
+                              {user.hwid && user.hwid.length > 16 ? (
+                                <>
+                                  {user.hwid.substring(0, 8)}...{user.hwid.substring(user.hwid.length - 8)}
+                                </>
+                              ) : (
+                                user.hwid
+                              )}
+                            </span>
+                          ) : (
+                            <span className="text-slate-500">Not Registered</span>
+                          )}
+                        </td>
                         <td className="p-4">
                           <span
                             className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
@@ -492,6 +541,11 @@ export default function Home() {
                             <span className={`w-1.5 h-1.5 rounded-full ${isExpired ? 'bg-rose-400' : 'bg-emerald-400'}`}></span>
                             {isExpired ? 'Expired' : 'Active'}
                           </span>
+                          {user.hwidReset && (
+                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                              Reset Pending
+                            </span>
+                          )}
                         </td>
                         <td className="p-4 text-slate-300 text-xs">
                           {new Date(user.expiresAt).toLocaleDateString(undefined, {
@@ -507,6 +561,15 @@ export default function Home() {
                           >
                             Edit
                           </button>
+                          {hasHwid && (
+                            <button
+                              onClick={() => handleResetHwid(user.username)}
+                              className="bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border border-amber-500/20 px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all duration-200 hover:shadow-lg hover:shadow-amber-500/10"
+                              title="Reset HWID - Allows login from any device"
+                            >
+                              Reset HWID
+                            </button>
+                          )}
                           <button
                             onClick={() => handleDelete(user._id)}
                             className="bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 border border-rose-500/20 px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all duration-200 hover:shadow-lg hover:shadow-rose-500/10"

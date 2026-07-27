@@ -20,7 +20,6 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { username, password, durationDays } = body;
 
-    // মেয়াদের তারিখ হিসেব করা
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + Number(durationDays));
 
@@ -28,6 +27,8 @@ export async function POST(req: Request) {
       username,
       password,
       expiresAt,
+      hwid: null, // blank
+      hwidReset: false,
     });
 
     return NextResponse.json({ success: true, data: user });
@@ -41,7 +42,7 @@ export async function PUT(req: Request) {
   try {
     await dbConnect();
     const body = await req.json();
-    const { id, username, password, durationDays } = body;
+    const { id, username, password, durationDays, resetHwid } = body;
 
     const updateData: any = { username };
     if (password) updateData.password = password;
@@ -49,6 +50,12 @@ export async function PUT(req: Request) {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + Number(durationDays));
       updateData.expiresAt = expiresAt;
+    }
+    
+    // HWID রিসেট করার জন্য
+    if (resetHwid) {
+      updateData.hwid = null;
+      updateData.hwidReset = true;
     }
 
     const updatedUser = await User.findByIdAndUpdate(id, updateData, { new: true });
