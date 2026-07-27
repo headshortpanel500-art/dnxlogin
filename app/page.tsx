@@ -359,7 +359,7 @@ export default function Home() {
       <div className="min-h-screen bg-[#060a17] text-slate-100 flex items-center justify-center p-4 font-sans relative overflow-hidden">
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bnse Vaultg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="w-full max-w-md relative z-10">
           <div className="bg-[#0c1428]/90 backdrop-blur-2xl p-8 rounded-3xl border border-blue-500/20 shadow-2xl shadow-blue-900/30">
@@ -371,7 +371,7 @@ export default function Home() {
               <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-200 via-indigo-200 to-purple-200 bg-clip-text text-transparent">
                 DNX DYNAMICX
               </h1>
-              <p className="text-slate-400 text-sm mt-1">Administrator authentication required</p>
+              <p className="text-slate-400 text-sm mt-1">Administrator authentication required💫</p>
             </div>
 
             {loginError && (
