@@ -1,3 +1,4 @@
+// models/User.ts (HWID রেখেছি শুধু অ্যাডমিনের জন্য)
 import mongoose, { Schema, model, models } from 'mongoose';
 
 const UserSchema = new Schema(
@@ -33,15 +34,22 @@ const UserSchema = new Schema(
       type: Number,
       default: 0,
     },
-    // Device limit: 1 = single device, 2 = two devices, 0 = unlimited
     deviceLimit: {
       type: Number,
-      default: 0, // 0 = unlimited
+      default: 0,
     },
-    // Track all registered HWIDs
     registeredHwids: {
       type: [String],
       default: [],
+    },
+    createdBy: {
+      type: String,
+      default: null,
+      index: true,
+    },
+    createdByReseller: {
+      type: String,
+      default: null,
     },
   },
   {
@@ -49,7 +57,6 @@ const UserSchema = new Schema(
   }
 );
 
-// Settings Schema for Version Control
 const SettingsSchema = new Schema(
   {
     key: {
@@ -69,5 +76,4 @@ const SettingsSchema = new Schema(
 
 export const User = models.User || model('User', UserSchema);
 export const Settings = models.Settings || model('Settings', SettingsSchema);
-
 export default User;
