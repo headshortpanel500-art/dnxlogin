@@ -450,7 +450,7 @@ export default function Home() {
             <Shield className="w-6 h-6 text-white relative z-10" />
           </div>
           <span className="hidden md:block text-lg font-bold bg-gradient-to-r from-blue-200 via-indigo-200 to-purple-200 bg-clip-text text-transparent">
-            DNX DYNAMICX
+            DYNAMICX
           </span>
         </div>
 
