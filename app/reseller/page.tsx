@@ -481,7 +481,7 @@ export default function ResellerDashboard() {
             <Store className="w-6 h-6 text-white relative z-10" />
           </div>
           <span className="hidden lg:block text-lg font-bold bg-gradient-to-r from-emerald-200 via-emerald-300 to-teal-200 bg-clip-text text-transparent">
-            Reseller Panel
+           DNX Reseller Panel
           </span>
         </div>
 
@@ -540,7 +540,7 @@ export default function ResellerDashboard() {
             <div>
               <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-emerald-200 via-emerald-300 to-teal-200 bg-clip-text text-transparent flex items-center gap-2 md:gap-3">
                 <Activity className="w-6 h-6 md:w-8 md:h-8 text-emerald-400" />
-                My Licenses
+                Reseller Panel
               </h1>
               <p className="text-slate-400 text-xs md:text-sm mt-1 ml-1 tracking-wide">
                 Manage your created licenses and monitor their status

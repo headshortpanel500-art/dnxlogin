@@ -1,25 +1,20 @@
 // app/api/reseller/users/route.ts
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
-import { User } from '@/models/User';
+import User from '@/models/User';
 
+// GET all users for this reseller
 export async function GET(req: Request) {
   try {
     await dbConnect();
     const url = new URL(req.url);
     const resellerUsername = url.searchParams.get('reseller');
 
-    if (!resellerUsername) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
+    // Filter users by reseller username
     const users = await User.find({ 
       createdBy: resellerUsername 
     }).select('-__v');
-
+    
     return NextResponse.json({ success: true, data: users });
   } catch (error) {
     return NextResponse.json(
@@ -29,26 +24,12 @@ export async function GET(req: Request) {
   }
 }
 
+// POST create user
 export async function POST(req: Request) {
   try {
     await dbConnect();
     const body = await req.json();
     const { username, password, durationDays, deviceLimit, reseller } = body;
-
-    if (!reseller) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    // FIXED: Reseller can only create users with deviceLimit = 1
-    if (deviceLimit !== 1) {
-      return NextResponse.json(
-        { success: false, error: 'Resellers can only create users with 1 device limit' },
-        { status: 400 }
-      );
-    }
 
     // Check if user exists
     const existingUser = await User.findOne({ username });
@@ -68,9 +49,9 @@ export async function POST(req: Request) {
       username,
       password,
       expiresAt,
-      deviceLimit: 1, // FIXED: Always 1 for resellers
+      deviceLimit: deviceLimit || 1,
       registeredHwids: [],
-      createdBy: reseller,
+      createdBy: reseller || 'admin',
     });
 
     return NextResponse.json({
@@ -86,35 +67,12 @@ export async function POST(req: Request) {
   }
 }
 
+// PUT update user
 export async function PUT(req: Request) {
   try {
     await dbConnect();
     const body = await req.json();
     const { id, username, password, durationDays, deviceLimit, reseller } = body;
-
-    if (!reseller) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    // FIXED: Reseller can only update users with deviceLimit = 1
-    if (deviceLimit !== 1) {
-      return NextResponse.json(
-        { success: false, error: 'Resellers can only set device limit to 1' },
-        { status: 400 }
-      );
-    }
-
-    // Check if user belongs to this reseller
-    const existingUser = await User.findById(id);
-    if (!existingUser || existingUser.createdBy !== reseller) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized or user not found' },
-        { status: 403 }
-      );
-    }
 
     const updateData: any = { username };
     
@@ -128,10 +86,18 @@ export async function PUT(req: Request) {
       updateData.expiresAt = expiresAt;
     }
     
-    // FIXED: Always set deviceLimit to 1
-    updateData.deviceLimit = 1;
+    if (deviceLimit !== undefined) {
+      updateData.deviceLimit = deviceLimit;
+    }
 
     const user = await User.findByIdAndUpdate(id, updateData, { new: true });
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'User not found' },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
@@ -146,29 +112,21 @@ export async function PUT(req: Request) {
   }
 }
 
+// DELETE user
 export async function DELETE(req: Request) {
   try {
     await dbConnect();
     const body = await req.json();
-    const { id, reseller } = body;
+    const { id } = body;
 
-    if (!reseller) {
+    const user = await User.findByIdAndDelete(id);
+
+    if (!user) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: 'User not found' },
+        { status: 404 }
       );
     }
-
-    // Check if user belongs to this reseller
-    const existingUser = await User.findById(id);
-    if (!existingUser || existingUser.createdBy !== reseller) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized or user not found' },
-        { status: 403 }
-      );
-    }
-
-    await User.findByIdAndDelete(id);
 
     return NextResponse.json({
       success: true,
