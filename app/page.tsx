@@ -1,4 +1,3 @@
-// app/page.tsx (UPDATED with Reseller Management)
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -29,10 +28,7 @@ import {
   Database,
   Cpu,
   Wifi,
-  Zap,
-  UserPlus,
-  UserCog,
-  BarChart3
+  Zap
 } from 'lucide-react';
 
 interface IUser {
@@ -47,22 +43,6 @@ interface IUser {
   lastLoginIP?: string;
   registeredHwids?: string[];
   deviceLimit?: number;
-  createdBy?: string | null;
-  createdByReseller?: string | null;
-}
-
-interface IReseller {
-  _id: string;
-  username: string;
-  email: string;
-  isActive: boolean;
-  level: number;
-  maxUsers: number;
-  totalUsersCreated: number;
-  activeUsersCount: number;
-  totalDevices: number;
-  createdAt: string;
-  lastLogin: string | null;
 }
 
 export default function Home() {
@@ -78,22 +58,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Reseller State
-  const [resellers, setResellers] = useState<IReseller[]>([]);
-  const [resellersLoading, setResellersLoading] = useState(false);
-  const [resellerSearchTerm, setResellerSearchTerm] = useState('');
-
-  // Reseller Form State
-  const [newReseller, setNewReseller] = useState({
-    username: '',
-    password: '',
-    email: '',
-    maxUsers: 0,
-    level: 1,
-  });
-  const [editingReseller, setEditingReseller] = useState<any>(null);
-
-  // User Form State
+  // Form State
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [durationDays, setDurationDays] = useState<number>(30);
@@ -106,7 +71,7 @@ export default function Home() {
   const [newVersion, setNewVersion] = useState('');
   const [versionLoading, setVersionLoading] = useState(false);
   const [serverControlLoading, setServerControlLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'users' | 'resellers' | 'settings'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'settings'>('users');
 
   // Toast Alert State
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
@@ -125,7 +90,6 @@ export default function Home() {
           setIsAuthenticated(true);
           fetchUsers();
           fetchServerSettings();
-          fetchResellers();
         } else {
           setIsAuthenticated(false);
         }
@@ -154,7 +118,6 @@ export default function Home() {
         setIsAuthenticated(true);
         fetchUsers();
         fetchServerSettings();
-        fetchResellers();
       } else {
         setLoginError(data.error || 'Invalid credentials');
       }
@@ -177,7 +140,6 @@ export default function Home() {
     }
   };
 
-  // Fetch Users
   const fetchUsers = async () => {
     setLoading(true);
     try {
@@ -192,24 +154,6 @@ export default function Home() {
       showToast('Network error while fetching data', 'error');
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Fetch Resellers
-  const fetchResellers = async () => {
-    setResellersLoading(true);
-    try {
-      const res = await fetch('/api/admin/resellers');
-      const result = await res.json();
-      if (result.success) {
-        setResellers(result.data);
-      } else {
-        showToast(result.error || 'Failed to fetch resellers', 'error');
-      }
-    } catch {
-      showToast('Network error while fetching resellers', 'error');
-    } finally {
-      setResellersLoading(false);
     }
   };
 
@@ -276,7 +220,6 @@ export default function Home() {
     }
   };
 
-  // User CRUD Operations
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username || (!editingId && !password)) return;
@@ -390,83 +333,8 @@ export default function Home() {
     setDeviceLimit(user.deviceLimit || 0);
   };
 
-  // Reseller CRUD Operations
-  const createReseller = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newReseller.username || !newReseller.password) {
-      showToast('Username and password are required', 'error');
-      return;
-    }
-
-    try {
-      const res = await fetch('/api/admin/resellers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newReseller),
-      });
-      const data = await res.json();
-      if (data.success) {
-        showToast('Reseller created successfully!');
-        setNewReseller({ username: '', password: '', email: '', maxUsers: 0, level: 1 });
-        fetchResellers();
-      } else {
-        showToast(data.error || 'Failed to create reseller', 'error');
-      }
-    } catch {
-      showToast('Error creating reseller', 'error');
-    }
-  };
-
-  const updateReseller = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingReseller) return;
-
-    try {
-      const res = await fetch('/api/admin/resellers', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingReseller),
-      });
-      const data = await res.json();
-      if (data.success) {
-        showToast('Reseller updated successfully!');
-        setEditingReseller(null);
-        fetchResellers();
-      } else {
-        showToast(data.error || 'Failed to update reseller', 'error');
-      }
-    } catch {
-      showToast('Error updating reseller', 'error');
-    }
-  };
-
-  const deleteReseller = async (id: string) => {
-    if (!confirm('Delete this reseller and ALL their users? This cannot be undone!')) return;
-    try {
-      const res = await fetch('/api/admin/resellers', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        showToast('Reseller and all associated users deleted successfully');
-        fetchResellers();
-        fetchUsers();
-      } else {
-        showToast(data.error || 'Failed to delete reseller', 'error');
-      }
-    } catch {
-      showToast('Error deleting reseller', 'error');
-    }
-  };
-
   const filteredUsers = users.filter((u) =>
     u.username.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const filteredResellers = resellers.filter((r) =>
-    r.username.toLowerCase().includes(resellerSearchTerm.toLowerCase())
   );
 
   const totalDevices = users.reduce((acc, u) => acc + (u.registeredHwids ? u.registeredHwids.length : (u.hwid && u.hwid !== 'null' && u.hwid !== '' ? 1 : 0)), 0);
@@ -603,24 +471,6 @@ export default function Home() {
           </button>
 
           <button
-            onClick={() => {
-              setActiveTab('resellers');
-              fetchResellers();
-            }}
-            className={`sidebar-item w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-300 ${
-              activeTab === 'resellers'
-                ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-300 border-l-2 border-purple-400 shadow-lg shadow-purple-500/10'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30'
-            }`}
-          >
-            <UserPlus className="w-5 h-5 flex-shrink-0" />
-            <span className="hidden md:inline">Resellers</span>
-            <span className="hidden md:inline ml-auto text-xs bg-purple-500/20 px-2 py-0.5 rounded-full text-purple-300">
-              {resellers.length}
-            </span>
-          </button>
-
-          <button
             onClick={() => setActiveTab('settings')}
             className={`sidebar-item w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-300 ${
               activeTab === 'settings'
@@ -682,7 +532,7 @@ export default function Home() {
                 Dashboard
               </h1>
               <p className="text-slate-400 text-sm mt-1 ml-1 tracking-wide">
-                Manage users, resellers, devices, and server settings from one place
+                Manage users, devices, and server settings from one place
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -694,7 +544,7 @@ export default function Home() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-gradient-to-br from-[#0a1225]/80 to-[#0c1428]/80 backdrop-blur-xl rounded-2xl border border-blue-500/10 p-5 shadow-xl shadow-blue-900/5 hover:shadow-blue-500/10 transition-all duration-300 group">
               <div className="flex items-center justify-between">
                 <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">Total Users</p>
@@ -722,13 +572,6 @@ export default function Home() {
                 <XCircle className="w-4 h-4 text-rose-400 group-hover:scale-110 transition-transform" />
               </div>
               <p className="text-2xl font-bold text-rose-300 mt-2">{expiredUsers}</p>
-            </div>
-            <div className="bg-gradient-to-br from-[#0a1225]/80 to-[#0c1428]/80 backdrop-blur-xl rounded-2xl border border-purple-500/10 p-5 shadow-xl shadow-purple-900/5 hover:shadow-purple-500/10 transition-all duration-300 group">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">Resellers</p>
-                <UserPlus className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
-              </div>
-              <p className="text-2xl font-bold text-purple-300 mt-2">{resellers.length}</p>
             </div>
           </div>
 
@@ -923,20 +766,11 @@ export default function Home() {
 
                           return (
                             <tr key={user._id} className="hover:bg-blue-500/5 transition duration-200 group">
-                              <td className="p-4 pl-6 font-medium text-slate-200">
-                                <div className="flex flex-col">
-                                  <span className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500/20 to-indigo-500/20 flex items-center justify-center text-xs font-bold text-blue-300 border border-blue-500/20">
-                                      {user.username.charAt(0).toUpperCase()}
-                                    </div>
-                                    {user.username}
-                                  </span>
-                                  {user.createdBy && (
-                                    <span className="text-[10px] text-purple-400 ml-10">
-                                      Reseller: {user.createdBy}
-                                    </span>
-                                  )}
+                              <td className="p-4 pl-6 font-medium text-slate-200 flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500/20 to-indigo-500/20 flex items-center justify-center text-xs font-bold text-blue-300 border border-blue-500/20">
+                                  {user.username.charAt(0).toUpperCase()}
                                 </div>
+                                {user.username}
                               </td>
                               <td className="p-4 text-slate-400 font-mono text-xs">{user.password || '••••••••'}</td>
                               <td className="p-4">
@@ -1060,278 +894,6 @@ export default function Home() {
                 </div>
               </div>
             </>
-          )}
-
-          {/* Resellers Tab Content */}
-          {activeTab === 'resellers' && (
-            <div className="space-y-6">
-              {/* Create/Edit Reseller Form */}
-              <div className="bg-gradient-to-br from-[#0a1225]/90 to-[#0c1428]/90 backdrop-blur-2xl p-6 md:p-8 rounded-3xl border border-purple-500/10 shadow-2xl shadow-purple-900/10 relative overflow-hidden">
-                <div className="absolute -top-20 -right-20 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
-                <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-pink-500/5 rounded-full blur-3xl pointer-events-none" />
-                
-                <h2 className="text-xl font-semibold mb-6 text-purple-200 flex items-center gap-3">
-                  <div className="w-1 h-6 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
-                  {editingReseller ? (
-                    <span className="flex items-center gap-2">
-                      <Edit className="w-5 h-5" />
-                      Edit Reseller
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      <UserPlus className="w-5 h-5" />
-                      Create New Reseller
-                    </span>
-                  )}
-                </h2>
-
-                <form onSubmit={editingReseller ? updateReseller : createReseller} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Username</label>
-                    <input
-                      type="text"
-                      value={editingReseller ? editingReseller.username : newReseller.username}
-                      onChange={(e) => {
-                        if (editingReseller) {
-                          setEditingReseller({ ...editingReseller, username: e.target.value });
-                        } else {
-                          setNewReseller({ ...newReseller, username: e.target.value });
-                        }
-                      }}
-                      placeholder="reseller_01"
-                      className="w-full bg-[#060a17]/80 border border-purple-500/20 rounded-2xl px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                      {editingReseller ? 'New Password' : 'Password'}
-                    </label>
-                    <input
-                      type="text"
-                      value={editingReseller ? editingReseller.password || '' : newReseller.password}
-                      onChange={(e) => {
-                        if (editingReseller) {
-                          setEditingReseller({ ...editingReseller, password: e.target.value });
-                        } else {
-                          setNewReseller({ ...newReseller, password: e.target.value });
-                        }
-                      }}
-                      placeholder={editingReseller ? 'optional' : 'securepass123'}
-                      className="w-full bg-[#060a17]/80 border border-purple-500/20 rounded-2xl px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-                      required={!editingReseller}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Email</label>
-                    <input
-                      type="email"
-                      value={editingReseller ? editingReseller.email || '' : newReseller.email}
-                      onChange={(e) => {
-                        if (editingReseller) {
-                          setEditingReseller({ ...editingReseller, email: e.target.value });
-                        } else {
-                          setNewReseller({ ...newReseller, email: e.target.value });
-                        }
-                      }}
-                      placeholder="reseller@email.com"
-                      className="w-full bg-[#060a17]/80 border border-purple-500/20 rounded-2xl px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Max Users</label>
-                    <input
-                      type="number"
-                      value={editingReseller ? editingReseller.maxUsers : newReseller.maxUsers}
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        if (editingReseller) {
-                          setEditingReseller({ ...editingReseller, maxUsers: val });
-                        } else {
-                          setNewReseller({ ...newReseller, maxUsers: val });
-                        }
-                      }}
-                      placeholder="0 = unlimited"
-                      className="w-full bg-[#060a17]/80 border border-purple-500/20 rounded-2xl px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-                    />
-                  </div>
-
-                  <div className="flex items-end gap-2">
-                    <button
-                      type="submit"
-                      className="w-full bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 hover:from-purple-500 hover:via-pink-500 hover:to-purple-500 text-white font-semibold py-2.5 px-4 rounded-2xl text-sm transition-all duration-300 shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2"
-                    >
-                      {editingReseller ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                      {editingReseller ? 'Update' : 'Create'}
-                    </button>
-                    {editingReseller && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingReseller(null);
-                        }}
-                        className="bg-slate-800/60 hover:bg-slate-700/60 text-slate-300 py-2.5 px-4 rounded-2xl text-sm border border-slate-700/50"
-                      >
-                        Cancel
-                      </button>
-                    )}
-                  </div>
-                </form>
-              </div>
-
-              {/* Resellers Table */}
-              <div className="bg-gradient-to-br from-[#0a1225]/90 to-[#0c1428]/90 backdrop-blur-2xl rounded-3xl border border-purple-500/10 overflow-hidden shadow-2xl shadow-purple-900/10">
-                <div className="p-5 md:p-6 border-b border-purple-500/10 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <h2 className="text-base font-semibold text-slate-200 flex items-center gap-2">
-                    <Database className="w-5 h-5 text-purple-400" />
-                    All Resellers
-                    <span className="text-xs text-slate-400 font-normal ml-2 bg-purple-500/10 px-2 py-0.5 rounded-full">
-                      {filteredResellers.length}
-                    </span>
-                  </h2>
-
-                  <div className="relative w-full sm:w-72">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <input
-                      type="text"
-                      value={resellerSearchTerm}
-                      onChange={(e) => setResellerSearchTerm(e.target.value)}
-                      placeholder="Search reseller..."
-                      className="w-full bg-[#060a17]/80 border border-purple-500/20 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-transparent transition"
-                    />
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-sm">
-                    <thead>
-                      <tr className="bg-[#060a17]/60 text-slate-400 text-xs uppercase tracking-wider border-b border-purple-500/10">
-                        <th className="p-4 pl-6 font-medium">Reseller</th>
-                        <th className="p-4 font-medium">Email</th>
-                        <th className="p-4 font-medium">Level</th>
-                        <th className="p-4 font-medium">Max Users</th>
-                        <th className="p-4 font-medium">Total Users</th>
-                        <th className="p-4 font-medium">Active Users</th>
-                        <th className="p-4 font-medium">Devices</th>
-                        <th className="p-4 font-medium">Status</th>
-                        <th className="p-4 text-right pr-6 font-medium">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-purple-500/5">
-                      {resellersLoading ? (
-                        <tr>
-                          <td colSpan={9} className="p-8 text-center text-slate-500">
-                            <div className="flex items-center justify-center gap-3">
-                              <RefreshCw className="w-4 h-4 text-purple-400 animate-spin" />
-                              Loading resellers...
-                            </div>
-                          </td>
-                        </tr>
-                      ) : filteredResellers.length === 0 ? (
-                        <tr>
-                          <td colSpan={9} className="p-8 text-center text-slate-500">
-                            No resellers found. Create your first reseller!
-                          </td>
-                        </tr>
-                      ) : (
-                        filteredResellers.map((reseller) => (
-                          <tr key={reseller._id} className="hover:bg-purple-500/5 transition duration-200">
-                            <td className="p-4 pl-6 font-medium text-slate-200">
-                              <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center text-xs font-bold text-purple-300 border border-purple-500/20">
-                                  {reseller.username.charAt(0).toUpperCase()}
-                                </div>
-                                {reseller.username}
-                              </div>
-                            </td>
-                            <td className="p-4 text-slate-400 text-xs">{reseller.email || '-'}</td>
-                            <td className="p-4">
-                              <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-purple-500/10 text-purple-300 border border-purple-500/20">
-                                Level {reseller.level || 1}
-                              </span>
-                            </td>
-                            <td className="p-4 text-slate-300">
-                              {reseller.maxUsers === 0 ? '♾️' : reseller.maxUsers}
-                            </td>
-                            <td className="p-4 text-slate-300 font-semibold">{reseller.totalUsersCreated || 0}</td>
-                            <td className="p-4 text-emerald-300 font-semibold">{reseller.activeUsersCount || 0}</td>
-                            <td className="p-4 text-purple-300 font-semibold">{reseller.totalDevices || 0}</td>
-                            <td className="p-4">
-                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                                reseller.isActive !== false
-                                  ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
-                                  : 'bg-rose-500/10 text-rose-300 border border-rose-500/20'
-                              }`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${reseller.isActive !== false ? 'bg-emerald-400' : 'bg-rose-400'}`}></span>
-                                {reseller.isActive !== false ? 'Active' : 'Disabled'}
-                              </span>
-                            </td>
-                            <td className="p-4 text-right pr-6">
-                              <div className="flex flex-wrap justify-end gap-1">
-                                <button
-                                  onClick={() => {
-                                    setEditingReseller({
-                                      id: reseller._id,
-                                      username: reseller.username,
-                                      email: reseller.email || '',
-                                      maxUsers: reseller.maxUsers || 0,
-                                      level: reseller.level || 1,
-                                      isActive: reseller.isActive !== false,
-                                    });
-                                  }}
-                                  className="bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 border border-purple-500/20 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-200 flex items-center gap-1"
-                                >
-                                  <Edit className="w-3 h-3" />
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() => deleteReseller(reseller._id)}
-                                  className="bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 border border-rose-500/20 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-200 flex items-center gap-1"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                  Delete
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Reseller Summary Stats */}
-                <div className="p-4 border-t border-purple-500/10 bg-[#060a17]/40">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center">
-                      <p className="text-xs text-slate-400 uppercase tracking-wider">Total Resellers</p>
-                      <p className="text-lg font-bold text-purple-300">{resellers.length}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-slate-400 uppercase tracking-wider">Total Users Created</p>
-                      <p className="text-lg font-bold text-blue-300">
-                        {resellers.reduce((acc, r) => acc + (r.totalUsersCreated || 0), 0)}
-                      </p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-slate-400 uppercase tracking-wider">Total Active Users</p>
-                      <p className="text-lg font-bold text-emerald-300">
-                        {resellers.reduce((acc, r) => acc + (r.activeUsersCount || 0), 0)}
-                      </p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-slate-400 uppercase tracking-wider">Total Devices</p>
-                      <p className="text-lg font-bold text-purple-300">
-                        {resellers.reduce((acc, r) => acc + (r.totalDevices || 0), 0)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           )}
 
           {/* Settings Tab Content */}
@@ -1473,7 +1035,7 @@ export default function Home() {
                   System Overview
                 </h2>
 
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="p-4 bg-[#060a17]/60 rounded-2xl border border-blue-500/10 text-center group hover:border-blue-500/30 transition-all">
                     <Users className="w-6 h-6 text-blue-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
                     <p className="text-xs text-slate-400 uppercase tracking-wider">Total Users</p>
@@ -1488,11 +1050,6 @@ export default function Home() {
                     <CheckCircle className="w-6 h-6 text-emerald-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
                     <p className="text-xs text-slate-400 uppercase tracking-wider">Active</p>
                     <p className="text-2xl font-bold text-emerald-300 mt-1">{activeUsers}</p>
-                  </div>
-                  <div className="p-4 bg-[#060a17]/60 rounded-2xl border border-blue-500/10 text-center group hover:border-blue-500/30 transition-all">
-                    <UserPlus className="w-6 h-6 text-purple-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-                    <p className="text-xs text-slate-400 uppercase tracking-wider">Resellers</p>
-                    <p className="text-2xl font-bold text-purple-300 mt-1">{resellers.length}</p>
                   </div>
                   <div className="p-4 bg-[#060a17]/60 rounded-2xl border border-blue-500/10 text-center group hover:border-blue-500/30 transition-all">
                     <Server className={`w-6 h-6 mx-auto mb-2 group-hover:scale-110 transition-transform ${serverStatus === 'online' ? 'text-emerald-400' : 'text-rose-400'}`} />
