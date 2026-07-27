@@ -1,4 +1,4 @@
-// models/User.ts (HWID রেখেছি শুধু অ্যাডমিনের জন্য)
+// models/user.ts
 import mongoose, { Schema, model, models } from 'mongoose';
 
 const UserSchema = new Schema(
@@ -44,12 +44,30 @@ const UserSchema = new Schema(
     },
     createdBy: {
       type: String,
-      default: null,
+      default: 'admin',
       index: true,
     },
     createdByReseller: {
       type: String,
       default: null,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+const ResellerSchema = new Schema(
+  {
+    username: {
+      type: String,
+      required: [true, 'Username is required'],
+      unique: true,
+      trim: true,
+    },
+    password: {
+      type: String,
+      required: [true, 'Password is required'],
     },
   },
   {
@@ -75,5 +93,6 @@ const SettingsSchema = new Schema(
 );
 
 export const User = models.User || model('User', UserSchema);
+export const Reseller = models.Reseller || model('Reseller', ResellerSchema);
 export const Settings = models.Settings || model('Settings', SettingsSchema);
 export default User;

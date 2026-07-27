@@ -42,14 +42,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // FIXED: Reseller can only create users with deviceLimit = 1
-    if (deviceLimit !== 1) {
-      return NextResponse.json(
-        { success: false, error: 'Resellers can only create users with 1 device limit' },
-        { status: 400 }
-      );
-    }
-
     // Check if user exists
     const existingUser = await User.findOne({ username });
     if (existingUser) {
@@ -68,7 +60,7 @@ export async function POST(req: Request) {
       username,
       password,
       expiresAt,
-      deviceLimit: 1, // FIXED: Always 1 for resellers
+      deviceLimit: deviceLimit || 0,
       registeredHwids: [],
       createdBy: reseller,
     });
@@ -99,14 +91,6 @@ export async function PUT(req: Request) {
       );
     }
 
-    // FIXED: Reseller can only update users with deviceLimit = 1
-    if (deviceLimit !== 1) {
-      return NextResponse.json(
-        { success: false, error: 'Resellers can only set device limit to 1' },
-        { status: 400 }
-      );
-    }
-
     // Check if user belongs to this reseller
     const existingUser = await User.findById(id);
     if (!existingUser || existingUser.createdBy !== reseller) {
@@ -128,8 +112,9 @@ export async function PUT(req: Request) {
       updateData.expiresAt = expiresAt;
     }
     
-    // FIXED: Always set deviceLimit to 1
-    updateData.deviceLimit = 1;
+    if (deviceLimit !== undefined) {
+      updateData.deviceLimit = deviceLimit;
+    }
 
     const user = await User.findByIdAndUpdate(id, updateData, { new: true });
 
