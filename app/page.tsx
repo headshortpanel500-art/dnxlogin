@@ -14,6 +14,13 @@ interface IUser {
   lastLoginIP?: string;
 }
 
+interface ISettings {
+  exe_version: string;
+  server_status: 'online' | 'offline' | 'maintenance';
+  maintenance_message: string;
+  allow_new_registration: boolean;
+}
+
 export default function Home() {
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -26,6 +33,16 @@ export default function Home() {
   const [users, setUsers] = useState<IUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Settings State
+  const [settings, setSettings] = useState<ISettings>({
+    exe_version: '1.0.0',
+    server_status: 'online',
+    maintenance_message: 'Server is under maintenance. Please try again later.',
+    allow_new_registration: true,
+  });
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   // Form State
   const [username, setUsername] = useState('');
@@ -50,6 +67,7 @@ export default function Home() {
         if (data.authenticated) {
           setIsAuthenticated(true);
           fetchUsers();
+          fetchSettings();
         } else {
           setIsAuthenticated(false);
         }
@@ -78,6 +96,7 @@ export default function Home() {
       if (data.success) {
         setIsAuthenticated(true);
         fetchUsers();
+        fetchSettings();
       } else {
         setLoginError(data.error || 'Invalid credentials');
       }
@@ -116,6 +135,46 @@ export default function Home() {
       showToast('Network error while fetching data', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch Settings
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch('/api/settings');
+      const result = await res.json();
+      if (result.success) {
+        setSettings({
+          exe_version: result.data.exe_version || '1.0.0',
+          server_status: result.data.server_status || 'online',
+          maintenance_message: result.data.maintenance_message || 'Server is under maintenance. Please try again later.',
+          allow_new_registration: result.data.allow_new_registration !== undefined ? result.data.allow_new_registration : true,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to fetch settings', err);
+    }
+  };
+
+  // Save Settings
+  const saveSettings = async () => {
+    setSettingsLoading(true);
+    try {
+      const res = await fetch('/api/settings/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        showToast('Settings saved successfully!', 'success');
+      } else {
+        showToast(result.error || 'Failed to save settings', 'error');
+      }
+    } catch (err) {
+      showToast('Error saving settings', 'error');
+    } finally {
+      setSettingsLoading(false);
     }
   };
 
@@ -214,6 +273,24 @@ export default function Home() {
   const filteredUsers = users.filter((u) =>
     u.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const getServerStatusColor = () => {
+    switch (settings.server_status) {
+      case 'online': return 'text-emerald-400';
+      case 'offline': return 'text-rose-400';
+      case 'maintenance': return 'text-amber-400';
+      default: return 'text-slate-400';
+    }
+  };
+
+  const getServerStatusBadge = () => {
+    switch (settings.server_status) {
+      case 'online': return 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300';
+      case 'offline': return 'bg-rose-500/10 border-rose-500/20 text-rose-300';
+      case 'maintenance': return 'bg-amber-500/10 border-amber-500/20 text-amber-300';
+      default: return 'bg-slate-500/10 border-slate-500/20 text-slate-300';
+    }
+  };
 
   // Loading Screen while checking session
   if (isAuthenticated === null) {
@@ -376,6 +453,118 @@ export default function Home() {
             </button>
           </div>
         </div>
+
+        {/* Server Status Bar */}
+        <div className="bg-slate-900/60 backdrop-blur-2xl p-4 rounded-3xl border border-slate-800/60 shadow-2xl shadow-indigo-900/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-slate-400 uppercase tracking-wider">Server Status</span>
+            <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold border ${getServerStatusBadge()}`}>
+              <span className={`w-2 h-2 rounded-full ${settings.server_status === 'online' ? 'bg-emerald-400 animate-pulse' : settings.server_status === 'offline' ? 'bg-rose-400' : 'bg-amber-400'}`}></span>
+              {settings.server_status.toUpperCase()}
+            </span>
+            <span className="text-xs text-slate-400">v{settings.exe_version}</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 border border-indigo-500/20 px-4 py-2 rounded-xl text-xs font-medium transition-all duration-200"
+            >
+              {showSettings ? 'Hide Settings' : 'Server Settings'}
+            </button>
+            {settings.server_status === 'maintenance' && (
+              <span className="text-amber-400 text-xs">{settings.maintenance_message}</span>
+            )}
+          </div>
+        </div>
+
+        {/* Settings Panel */}
+        {showSettings && (
+          <div className="bg-slate-900/60 backdrop-blur-2xl p-6 rounded-3xl border border-slate-800/60 shadow-2xl shadow-indigo-900/10 animate-in slide-in-from-top-5 duration-300">
+            <h3 className="text-lg font-semibold text-indigo-200 mb-4 flex items-center gap-2">
+              <span className="w-1 h-5 bg-indigo-500 rounded-full"></span>
+              Server & Version Control
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  EXE Version
+                </label>
+                <input
+                  type="text"
+                  value={settings.exe_version}
+                  onChange={(e) => setSettings({ ...settings, exe_version: e.target.value })}
+                  placeholder="e.g., 1.0.0"
+                  className="w-full bg-slate-950/70 border border-slate-700/70 rounded-2xl px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                />
+                <p className="text-xs text-slate-400">Current version required for EXE to connect</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  Server Status
+                </label>
+                <div className="flex gap-4">
+                  {['online', 'offline', 'maintenance'].map((status) => (
+                    <label key={status} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="server_status"
+                        value={status}
+                        checked={settings.server_status === status}
+                        onChange={(e) => setSettings({ ...settings, server_status: e.target.value as any })}
+                        className="w-4 h-4 accent-indigo-500"
+                      />
+                      <span className={`text-sm capitalize ${
+                        status === 'online' ? 'text-emerald-400' :
+                        status === 'offline' ? 'text-rose-400' :
+                        'text-amber-400'
+                      }`}>
+                        {status}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {settings.server_status === 'maintenance' && (
+                <div className="space-y-2 col-span-full animate-in slide-in-from-top-2 duration-300">
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Maintenance Message
+                  </label>
+                  <textarea
+                    value={settings.maintenance_message}
+                    onChange={(e) => setSettings({ ...settings, maintenance_message: e.target.value })}
+                    placeholder="Enter maintenance message..."
+                    rows={2}
+                    className="w-full bg-slate-950/70 border border-slate-700/70 rounded-2xl px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 resize-none"
+                  />
+                </div>
+              )}
+
+              <div className="flex items-center gap-3 col-span-full">
+                <input
+                  type="checkbox"
+                  checked={settings.allow_new_registration}
+                  onChange={(e) => setSettings({ ...settings, allow_new_registration: e.target.checked })}
+                  className="w-5 h-5 accent-indigo-500 rounded"
+                />
+                <label className="text-sm font-semibold text-slate-300">
+                  Allow New User Registration
+                </label>
+              </div>
+
+              <div className="col-span-full">
+                <button
+                  onClick={saveSettings}
+                  disabled={settingsLoading}
+                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold py-2.5 px-4 rounded-2xl text-sm transition-all duration-300 shadow-lg shadow-indigo-600/20 disabled:opacity-70"
+                >
+                  {settingsLoading ? 'Saving...' : 'Save Settings'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Form Card */}
         <div className="bg-slate-900/60 backdrop-blur-2xl p-6 md:p-8 rounded-3xl border border-slate-800/60 shadow-2xl shadow-indigo-900/10 relative overflow-hidden">
