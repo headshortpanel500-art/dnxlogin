@@ -13,7 +13,7 @@ interface IUser {
   loginCount?: number;
   lastLoginIP?: string;
   registeredHwids?: string[];
-  allowMultipleDevices?: boolean;
+  deviceLimit?: number;
 }
 
 export default function Home() {
@@ -33,6 +33,7 @@ export default function Home() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [durationDays, setDurationDays] = useState<number>(30);
+  const [deviceLimit, setDeviceLimit] = useState<number>(0); // 0 = unlimited
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // Server Control State
@@ -213,7 +214,13 @@ export default function Home() {
         const res = await fetch('/api/users', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingId, username, password, durationDays }),
+          body: JSON.stringify({ 
+            id: editingId, 
+            username, 
+            password, 
+            durationDays,
+            deviceLimit 
+          }),
         });
         const data = await res.json();
         if (data.success) {
@@ -226,7 +233,7 @@ export default function Home() {
         const res = await fetch('/api/users', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password, durationDays }),
+          body: JSON.stringify({ username, password, durationDays, deviceLimit }),
         });
         const data = await res.json();
         if (data.success) {
@@ -239,6 +246,7 @@ export default function Home() {
       setUsername('');
       setPassword('');
       setDurationDays(30);
+      setDeviceLimit(0);
       fetchUsers();
     } catch (err) {
       showToast('An error occurred', 'error');
@@ -289,9 +297,9 @@ export default function Home() {
     }
   };
 
-  // Clear All HWIDs for a user (Unlimited Devices)
+  // Clear All HWIDs for a user
   const handleClearAllHwids = async (username: string) => {
-    if (!confirm(`Are you sure you want to clear ALL registered devices for "${username}"? This will allow login from any device.`)) return;
+    if (!confirm(`Are you sure you want to clear ALL registered devices for "${username}"?`)) return;
     
     try {
       const res = await fetch('/api/admin/clear-hwids', {
@@ -316,13 +324,14 @@ export default function Home() {
     setEditingId(user._id);
     setUsername(user.username);
     setPassword('');
+    setDeviceLimit(user.deviceLimit || 0);
   };
 
   const filteredUsers = users.filter((u) =>
     u.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Loading Screen while checking session
+  // Loading Screen
   if (isAuthenticated === null) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-400 flex items-center justify-center font-sans">
@@ -458,7 +467,7 @@ export default function Home() {
               </h1>
             </div>
             <p className="text-slate-400 text-sm mt-1 ml-1 tracking-wide">
-              Secure credential management • real-time access control • HWID protection • Unlimited devices
+              Secure credential management • real-time access control • Device limit management
             </p>
           </div>
 
@@ -519,7 +528,7 @@ export default function Home() {
                 {editingId ? 'Edit License' : 'Generate New License'}
               </h2>
 
-              <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
                 <div className="space-y-1">
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     Username
@@ -562,6 +571,24 @@ export default function Home() {
                   />
                 </div>
 
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Device Limit
+                  </label>
+                  <select
+                    value={deviceLimit}
+                    onChange={(e) => setDeviceLimit(Number(e.target.value))}
+                    className="w-full bg-slate-950/70 border border-slate-700/70 rounded-2xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-transparent transition"
+                  >
+                    <option value="0">♾️ Unlimited</option>
+                    <option value="1">📱 1 Device</option>
+                    <option value="2">📱📱 2 Devices</option>
+                    <option value="3">📱📱📱 3 Devices</option>
+                    <option value="4">📱📱📱📱 4 Devices</option>
+                    <option value="5">📱📱📱📱📱 5 Devices</option>
+                  </select>
+                </div>
+
                 <div className="flex items-end gap-2">
                   <button
                     type="submit"
@@ -578,6 +605,7 @@ export default function Home() {
                         setUsername('');
                         setPassword('');
                         setDurationDays(30);
+                        setDeviceLimit(0);
                       }}
                       className="bg-slate-800/60 hover:bg-slate-700/60 text-slate-300 py-3 px-4 rounded-2xl text-sm transition backdrop-blur-sm border border-slate-700/50"
                     >
@@ -619,6 +647,7 @@ export default function Home() {
                     <tr className="bg-slate-950/40 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800/60">
                       <th className="p-4 pl-6 font-medium">Username</th>
                       <th className="p-4 font-medium">Password</th>
+                      <th className="p-4 font-medium">Device Limit</th>
                       <th className="p-4 font-medium">Devices</th>
                       <th className="p-4 font-medium">HWID</th>
                       <th className="p-4 font-medium">Status</th>
@@ -629,7 +658,7 @@ export default function Home() {
                   <tbody className="divide-y divide-slate-800/40">
                     {loading ? (
                       <tr>
-                        <td colSpan={7} className="p-8 text-center text-slate-500">
+                        <td colSpan={8} className="p-8 text-center text-slate-500">
                           <div className="flex items-center justify-center gap-3">
                             <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                             Loading credentials...
@@ -638,7 +667,7 @@ export default function Home() {
                       </tr>
                     ) : filteredUsers.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="p-8 text-center text-slate-500">
+                        <td colSpan={8} className="p-8 text-center text-slate-500">
                           No matching credentials found.
                         </td>
                       </tr>
@@ -647,17 +676,32 @@ export default function Home() {
                         const isExpired = new Date(user.expiresAt) < new Date();
                         const hasHwid = user.hwid && user.hwid !== 'null' && user.hwid !== '';
                         const deviceCount = user.registeredHwids ? user.registeredHwids.length : (hasHwid ? 1 : 0);
+                        const deviceLimit = user.deviceLimit || 0;
+                        const isDeviceLimitReached = deviceLimit > 0 && deviceCount >= deviceLimit;
+                        
                         return (
                           <tr key={user._id} className="hover:bg-slate-800/30 transition duration-200 group">
                             <td className="p-4 pl-6 font-medium text-slate-200">{user.username}</td>
                             <td className="p-4 text-slate-400 font-mono text-xs">{user.password || '••••••••'}</td>
                             <td className="p-4">
                               <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                                deviceLimit === 0
+                                  ? 'bg-purple-500/10 text-purple-300 border border-purple-500/20'
+                                  : 'bg-indigo-500/10 text-indigo-300 border border-indigo-500/20'
+                              }`}>
+                                {deviceLimit === 0 ? '♾️ Unlimited' : `📱 ${deviceLimit}`}
+                              </span>
+                            </td>
+                            <td className="p-4">
+                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
                                 deviceCount > 0
-                                  ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
+                                  ? isDeviceLimitReached
+                                    ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+                                    : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
                                   : 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
                               }`}>
-                                {deviceCount > 0 ? `📱 ${deviceCount}` : 'No devices'}
+                                {deviceCount > 0 ? `📱 ${deviceCount}${deviceLimit > 0 ? `/${deviceLimit}` : ''}` : 'No devices'}
+                                {isDeviceLimitReached && deviceLimit > 0 && ' 🔒'}
                               </span>
                             </td>
                             <td className="p-4 text-slate-400 font-mono text-xs">
@@ -680,11 +724,17 @@ export default function Home() {
                                 className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
                                   isExpired
                                     ? 'bg-rose-500/10 text-rose-300 border border-rose-500/20'
+                                    : isDeviceLimitReached && deviceLimit > 0
+                                    ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
                                     : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
                                 }`}
                               >
-                                <span className={`w-1.5 h-1.5 rounded-full ${isExpired ? 'bg-rose-400' : 'bg-emerald-400'}`}></span>
-                                {isExpired ? 'Expired' : 'Active'}
+                                <span className={`w-1.5 h-1.5 rounded-full ${
+                                  isExpired ? 'bg-rose-400' : 
+                                  isDeviceLimitReached && deviceLimit > 0 ? 'bg-amber-400' : 'bg-emerald-400'
+                                }`}></span>
+                                {isExpired ? 'Expired' : 
+                                 isDeviceLimitReached && deviceLimit > 0 ? 'Full' : 'Active'}
                               </span>
                               {user.hwidReset && (
                                 <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/20">
@@ -715,7 +765,7 @@ export default function Home() {
                                   >
                                     Reset HWID
                                   </button>
-                                  {deviceCount > 1 && (
+                                  {deviceCount > 0 && (
                                     <button
                                       onClick={() => handleClearAllHwids(user.username)}
                                       className="bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 border border-purple-500/20 px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all duration-200 hover:shadow-lg hover:shadow-purple-500/10"
@@ -837,7 +887,7 @@ export default function Home() {
                 Server Information
               </h2>
               
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div className="p-4 bg-slate-950/50 rounded-2xl border border-slate-700/50 text-center">
                   <p className="text-xs text-slate-400 uppercase tracking-wider">Total Users</p>
                   <p className="text-2xl font-bold text-indigo-300 mt-1">{users.length}</p>
@@ -846,6 +896,12 @@ export default function Home() {
                   <p className="text-xs text-slate-400 uppercase tracking-wider">Total Devices</p>
                   <p className="text-2xl font-bold text-emerald-300 mt-1">
                     {users.reduce((acc, u) => acc + (u.registeredHwids ? u.registeredHwids.length : (u.hwid && u.hwid !== 'null' && u.hwid !== '' ? 1 : 0)), 0)}
+                  </p>
+                </div>
+                <div className="p-4 bg-slate-950/50 rounded-2xl border border-slate-700/50 text-center">
+                  <p className="text-xs text-slate-400 uppercase tracking-wider">Unlimited Users</p>
+                  <p className="text-2xl font-bold text-purple-300 mt-1">
+                    {users.filter(u => (u.deviceLimit || 0) === 0).length}
                   </p>
                 </div>
                 <div className="p-4 bg-slate-950/50 rounded-2xl border border-slate-700/50 text-center">

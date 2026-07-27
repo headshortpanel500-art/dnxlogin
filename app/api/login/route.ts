@@ -27,7 +27,6 @@ export async function POST(req: Request) {
     const versionSettings = await Settings.findOne({ key: 'requiredVersion' });
     const requiredVersion = versionSettings ? versionSettings.value : '1.0.0';
     
-    // Version check
     if (!version) {
       return NextResponse.json(
         { 
@@ -39,7 +38,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Compare versions (simple string comparison, you can use semver for better)
     if (version !== requiredVersion) {
       return NextResponse.json(
         { 
@@ -48,7 +46,6 @@ export async function POST(req: Request) {
           requiredVersion: requiredVersion,
           currentVersion: version,
           needsUpdate: true,
-          updateUrl: 'https://your-update-url.com' // You can set this in settings
         },
         { status: 400 }
       );
@@ -104,38 +101,27 @@ export async function POST(req: Request) {
       );
     }
 
-    // 8. HWID Management - Unlimited Devices
-    // Check if this HWID is already registered
-    const hwidExists = user.registeredHwids && user.registeredHwids.includes(hwid);
+    // 8. HWID Management with Device Limit
+    const isHwidRegistered = user.registeredHwids && user.registeredHwids.includes(hwid);
+    const currentDeviceCount = user.registeredHwids ? user.registeredHwids.length : 0;
+    const deviceLimit = user.deviceLimit || 0; // 0 = unlimited
 
-    if (!hwidExists) {
-      // This is a new device
-      // Since allowMultipleDevices is true by default, we allow unlimited devices
-      
-      // Add the new HWID to the list
-      if (!user.registeredHwids) {
-        user.registeredHwids = [];
-      }
-      user.registeredHwids.push(hwid);
-      
-      // If no primary HWID set yet, set this as primary
-      if (!user.hwid) {
-        user.hwid = hwid;
-      }
-      
+    // Check if HWID is already registered (existing device)
+    if (isHwidRegistered) {
+      // Existing device - allow login
       user.loginCount = (user.loginCount || 0) + 1;
       user.lastLoginIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
       await user.save();
-      
+
       return NextResponse.json({
         status: 'success',
-        message: 'Login successful (New device registered)',
+        message: 'Login successful',
         user: {
           username: user.username,
           expiresAt: user.expiresAt,
           hwid: user.hwid,
-          isNewDevice: true,
-          deviceCount: user.registeredHwids.length,
+          deviceCount: currentDeviceCount,
+          deviceLimit: deviceLimit === 0 ? 'Unlimited' : deviceLimit,
         },
         serverInfo: {
           version: requiredVersion,
@@ -144,39 +130,45 @@ export async function POST(req: Request) {
       }, { status: 200 });
     }
 
-    // 9. HWID Reset check
-    if (user.hwidReset) {
-      user.hwidReset = false;
-      await user.save();
-      
+    // New device - check device limit
+    if (deviceLimit > 0 && currentDeviceCount >= deviceLimit) {
       return NextResponse.json({
-        status: 'success',
-        message: 'HWID has been reset. Please login again.',
-        user: {
-          username: user.username,
-          expiresAt: user.expiresAt,
-          hwidReset: true,
-        },
-        serverInfo: {
-          version: requiredVersion,
-          serverOnline: true,
-        }
-      }, { status: 200 });
+        status: 'error',
+        message: `Device limit reached! This license allows maximum ${deviceLimit} device(s).`,
+        deviceLimit: deviceLimit,
+        currentDevices: currentDeviceCount,
+        deviceLimitReached: true,
+      }, { status: 403 });
     }
 
-    // 10. Successful login with existing HWID
+    // Register new device
+    if (!user.registeredHwids) {
+      user.registeredHwids = [];
+    }
+    user.registeredHwids.push(hwid);
+    
+    // If no primary HWID set, set this as primary
+    if (!user.hwid) {
+      user.hwid = hwid;
+    }
+    
     user.loginCount = (user.loginCount || 0) + 1;
     user.lastLoginIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
     await user.save();
 
+    const remainingSlots = deviceLimit === 0 ? 'Unlimited' : (deviceLimit - user.registeredHwids.length);
+
     return NextResponse.json({
       status: 'success',
-      message: 'Login successful',
+      message: 'New device registered successfully!',
       user: {
         username: user.username,
         expiresAt: user.expiresAt,
         hwid: user.hwid,
-        deviceCount: user.registeredHwids ? user.registeredHwids.length : 1,
+        deviceCount: user.registeredHwids.length,
+        deviceLimit: deviceLimit === 0 ? 'Unlimited' : deviceLimit,
+        remainingSlots: remainingSlots,
+        isNewDevice: true,
       },
       serverInfo: {
         version: requiredVersion,
