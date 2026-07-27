@@ -1,20 +1,12 @@
-// app/api/reseller/users/route.ts
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import User from '@/models/User';
 
-// GET all users for this reseller
-export async function GET(req: Request) {
+// GET all users
+export async function GET() {
   try {
     await dbConnect();
-    const url = new URL(req.url);
-    const resellerUsername = url.searchParams.get('reseller');
-
-    // Filter users by reseller username
-    const users = await User.find({ 
-      createdBy: resellerUsername 
-    }).select('-__v');
-    
+    const users = await User.find({}).select('-__v');
     return NextResponse.json({ success: true, data: users });
   } catch (error) {
     return NextResponse.json(
@@ -29,7 +21,7 @@ export async function POST(req: Request) {
   try {
     await dbConnect();
     const body = await req.json();
-    const { username, password, durationDays, deviceLimit, reseller } = body;
+    const { username, password, durationDays, deviceLimit } = body;
 
     // Check if user exists
     const existingUser = await User.findOne({ username });
@@ -44,14 +36,13 @@ export async function POST(req: Request) {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + durationDays);
 
-    // Create user with reseller info
+    // Create user with device limit
     const user = await User.create({
       username,
       password,
       expiresAt,
-      deviceLimit: deviceLimit || 1,
+      deviceLimit: deviceLimit || 0, // 0 = unlimited
       registeredHwids: [],
-      createdBy: reseller || 'admin',
     });
 
     return NextResponse.json({
@@ -72,7 +63,7 @@ export async function PUT(req: Request) {
   try {
     await dbConnect();
     const body = await req.json();
-    const { id, username, password, durationDays, deviceLimit, reseller } = body;
+    const { id, username, password, durationDays, deviceLimit } = body;
 
     const updateData: any = { username };
     
