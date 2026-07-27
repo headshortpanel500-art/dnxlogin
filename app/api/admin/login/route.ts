@@ -1,44 +1,37 @@
-// app/api/admin/login/route.ts
 import { NextResponse } from 'next/server';
-import { createSession } from '@/lib/auth';
-import bcrypt from 'bcryptjs';
-import dbConnect from '@/lib/dbConnect';
 
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
-// এই হ্যাশটা ব্যবহার করুন অথবা নতুন করে তৈরি করুন
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || '$2a$10$N9qo8uLOickgx2ZMRZoMy.Mr/.Zx5hHrFvZgYyjZ.yU5lJWZYsJDa';
-
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    await dbConnect();
-    
-    const body = await request.json();
-    const { username, password } = body;
+    const { username, password } = await req.json();
 
-    console.log('Login attempt for:', username);
+    const ADMIN_USER = process.env.ADMIN_USERNAME || 'admin';
+    const ADMIN_PASS = process.env.ADMIN_PASSWORD || 'admin123';
 
-    if (username === ADMIN_USERNAME) {
-      const isValid = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
-      console.log('Password valid:', isValid);
-      
-      if (isValid) {
-        const token = await createSession('admin', 'admin', username);
-        console.log('Token created:', token.substring(0, 20) + '...');
-        
-        return NextResponse.json({
-          success: true,
-          token,
-          user: { username, role: 'admin' },
-        });
-      }
+    if (username === ADMIN_USER && password === ADMIN_PASS) {
+      const response = NextResponse.json({
+        success: true,
+        message: 'Login successful',
+      });
+
+      // HTTP-Only Cookie সেট করা
+      response.cookies.set({
+        name: 'admin_session',
+        value: 'authenticated_true',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24, // ১ দিনের জন্য সেশন থাকবে
+        path: '/',
+      });
+
+      return response;
     }
 
     return NextResponse.json(
-      { success: false, error: 'Invalid credentials' },
+      { success: false, error: 'Invalid admin credentials' },
       { status: 401 }
     );
   } catch (error: any) {
-    console.error('Login error:', error);
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }
