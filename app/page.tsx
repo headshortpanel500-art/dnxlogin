@@ -307,7 +307,7 @@ export default function Home() {
         showToast('সর্বোচ্চ ৩টি ফাইল সিলেক্ট করা যাবে!', 'error');
         return;
       }
-      const validFiles = files.filter(f => f.size <= 15 * 1024 * 1024);
+      const validFiles = files.filter(f => f.size <= 50 * 1024 * 1024);
       if (validFiles.length !== files.length) {
         showToast('কিছু ফাইল ১৫MB এর বেশি!', 'error');
       }
