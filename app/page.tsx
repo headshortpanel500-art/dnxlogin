@@ -779,7 +779,7 @@ export default function Home() {
                     ) : (
                       <span className="flex items-center justify-center gap-2">
                         <Swords className="w-4 h-4" />
-                        Access Cheat Panel
+                        Access ADIAT X CHEAT
                       </span>
                     )}
                   </span>
@@ -1020,7 +1020,7 @@ export default function Home() {
                   <Target className="w-8 h-8 text-purple-400" />
                   <div className="absolute -inset-1 bg-purple-400/20 rounded-full blur-xl"></div>
                 </div>
-                Cheat Panel
+                ADIAT X CHEAT
               </h1>
               <p className="text-white/30 text-xs md:text-sm mt-1 ml-1 tracking-wide flex items-center gap-2">
                 <Sparkles className="w-3 h-3 text-pink-400" />
