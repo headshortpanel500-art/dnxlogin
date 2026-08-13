@@ -7,14 +7,14 @@ import mongoose from 'mongoose';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { fileId: string } }
+  { params }: { params: Promise<{ fileId: string }> } // ১. Promise টাইপ দেওয়া হলো
 ) {
   try {
     await connectDB();
 
-    const { fileId } = params;
+    const { fileId } = await params; // ২. params await করা হলো
 
-    if (!fileId) {
+    if (!fileId || !mongoose.Types.ObjectId.isValid(fileId)) {
       return new NextResponse('Invalid file ID', { status: 400 });
     }
 
@@ -22,24 +22,25 @@ export async function GET(
     const metadata = await FileMetadata.findOne({ fileId });
 
     if (!metadata) {
-      return new NextResponse('ফাইল পাওয়া যায়নি', { status: 404 });
+      return new NextResponse('ফাইল পাওয়া যায়নি', { status: 404 });
     }
 
-    // ডাউনলোড কাউন্ট বাড়ানো
+    // ডাউনলোড কাউন্ট বাড়ানো
     metadata.downloadCount = (metadata.downloadCount || 0) + 1;
     await metadata.save();
 
     // GridFS থেকে ফাইল স্ট্রিম করা
     const gridFSBucket = getGridFSBucket();
+    const objectId = new mongoose.Types.ObjectId(fileId);
     
     // ফাইল আছে কিনা চেক
-    const files = await gridFSBucket.find({ _id: new mongoose.Types.ObjectId(fileId) }).toArray();
+    const files = await gridFSBucket.find({ _id: objectId }).toArray();
     
     if (files.length === 0) {
-      return new NextResponse('ফাইল পাওয়া যায়নি', { status: 404 });
+      return new NextResponse('ফাইল পাওয়া যায়নি', { status: 404 });
     }
 
-    const downloadStream = gridFSBucket.openDownloadStream(new mongoose.Types.ObjectId(fileId));
+    const downloadStream = gridFSBucket.openDownloadStream(objectId);
 
     // হেডার সেট করা
     const headers = new Headers();
@@ -77,7 +78,7 @@ export async function GET(
   } catch (error: any) {
     console.error('Download error:', error);
     return new NextResponse(
-      error.message || 'ডাউনলোড করতে সমস্যা হয়েছে', 
+      error.message || 'ডাউনলোড করতে সমস্যা হয়েছে', 
       { status: 500 }
     );
   }
