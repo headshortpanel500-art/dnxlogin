@@ -5,12 +5,12 @@ import { File } from '@/models/User';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { fileId: string } }
+  { params }: { params: Promise<{ fileId: string }> } // ১. Promise টাইপ দেওয়া হলো
 ) {
   try {
     await connectDB();
 
-    const { fileId } = params;
+    const { fileId } = await params; // ২. params await করা হলো
     const [docId, fileIndex] = fileId.split('_');
 
     if (!docId || fileIndex === undefined) {
@@ -20,17 +20,17 @@ export async function GET(
     const fileDoc = await File.findById(docId);
 
     if (!fileDoc) {
-      return new NextResponse('ফাইল পাওয়া যায়নি', { status: 404 });
+      return new NextResponse('ফাইল পাওয়া যায়নি', { status: 404 });
     }
 
     const index = parseInt(fileIndex);
     const fileData = fileDoc.files[index];
 
     if (!fileData) {
-      return new NextResponse('ফাইল পাওয়া যায়নি', { status: 404 });
+      return new NextResponse('ফাইল পাওয়া যায়নি🚫', { status: 404 });
     }
 
-    // ডাউনলোড কাউন্ট বাড়ানো
+    // ডাউনলোড কাউন্ট বাড়ানো
     fileDoc.downloadCount = (fileDoc.downloadCount || 0) + 1;
     await fileDoc.save();
 
@@ -49,6 +49,6 @@ export async function GET(
 
   } catch (error: any) {
     console.error('Download error:', error);
-    return new NextResponse('ডাউনলোড করতে সমস্যা হয়েছে', { status: 500 });
+    return new NextResponse('ডাউনলোড করতে সমস্যা হয়েছে', { status: 500 });
   }
 }
