@@ -92,33 +92,26 @@ const SettingsSchema = new Schema(
   }
 );
 
-// ============ ফাইল আপলোডের জন্য Schema ============
-const FileSchema = new Schema(
+// ============ GridFS মেটাডেটা Schema ============
+const FileMetadataSchema = new Schema(
   {
-    files: [
-      {
-        filename: {
-          type: String,
-          required: true,
-        },
-        contentType: {
-          type: String,
-          required: true,
-        },
-        size: {
-          type: Number,
-          required: true,
-        },
-        data: {
-          type: Buffer,
-          required: true,
-        },
-        uploadDate: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
+    filename: {
+      type: String,
+      required: true,
+    },
+    contentType: {
+      type: String,
+      required: true,
+    },
+    size: {
+      type: Number,
+      required: true,
+    },
+    fileId: {
+      type: String,
+      required: true,
+      unique: true,
+    },
     uploadedBy: {
       type: String,
       default: 'admin',
@@ -127,16 +120,20 @@ const FileSchema = new Schema(
       type: Number,
       default: 0,
     },
+    uploadDate: {
+      type: Date,
+      default: Date.now,
+    },
   },
   {
     timestamps: true,
   }
 );
-// =====================================================
+// =================================================
 
 export const User = models.User || model('User', UserSchema);
 export const Reseller = models.Reseller || model('Reseller', ResellerSchema);
 export const Settings = models.Settings || model('Settings', SettingsSchema);
-export const File = models.File || model('File', FileSchema);
+export const FileMetadata = models.FileMetadata || model('FileMetadata', FileMetadataSchema);
 
 export default User;

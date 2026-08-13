@@ -1,29 +1,27 @@
 // app/api/files/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import { File } from '@/models/User';
+import { FileMetadata } from '@/models/User';
+import { getGridFSBucket } from '@/lib/gridfs';
+import mongoose from 'mongoose';
 
 // সব ফাইলের তালিকা
 export async function GET() {
   try {
     await connectDB();
 
-    const files = await File.find({})
-      .sort({ createdAt: -1 })
-      .select('files filename size uploadDate downloadCount createdAt');
+    const files = await FileMetadata.find({})
+      .sort({ uploadDate: -1 });
 
-    const formattedFiles = files.flatMap((doc: any) =>
-      doc.files.map((file: any, index: number) => ({
-        _id: doc._id,
-        fileId: `${doc._id}_${index}`,
-        filename: file.filename,
-        contentType: file.contentType,
-        size: file.size,
-        uploadDate: file.uploadDate || doc.createdAt,
-        downloadCount: doc.downloadCount || 0,
-        fileIndex: index,
-      }))
-    );
+    const formattedFiles = files.map((file: any) => ({
+      _id: file._id,
+      fileId: file.fileId,
+      filename: file.filename,
+      contentType: file.contentType,
+      size: file.size,
+      uploadDate: file.uploadDate,
+      downloadCount: file.downloadCount || 0,
+    }));
 
     return NextResponse.json({
       success: true,
@@ -45,34 +43,31 @@ export async function DELETE(req: NextRequest) {
     await connectDB();
 
     const { fileId } = await req.json();
-    const [docId, fileIndex] = fileId.split('_');
 
-    if (!docId || fileIndex === undefined) {
+    if (!fileId) {
       return NextResponse.json(
-        { success: false, error: 'Invalid file ID' },
+        { success: false, error: 'File ID required' },
         { status: 400 }
       );
     }
 
-    const fileDoc = await File.findById(docId);
+    const metadata = await FileMetadata.findOne({ fileId });
 
-    if (!fileDoc) {
+    if (!metadata) {
       return NextResponse.json(
         { success: false, error: 'ফাইল পাওয়া যায়নি' },
         { status: 404 }
       );
     }
 
-    const index = parseInt(fileIndex);
-
-    // যদি শুধু একটি ফাইল থাকে, পুরো ডকুমেন্ট ডিলিট
-    if (fileDoc.files.length === 1) {
-      await File.findByIdAndDelete(docId);
-    } else {
-      // নির্দিষ্ট ফাইলটি সরানো
-      fileDoc.files.splice(index, 1);
-      await fileDoc.save();
+    const gridFSBucket = getGridFSBucket();
+    try {
+      await gridFSBucket.delete(new mongoose.Types.ObjectId(fileId));
+    } catch (error) {
+      console.error('GridFS delete error:', error);
     }
+
+    await FileMetadata.deleteOne({ fileId });
 
     return NextResponse.json({
       success: true,
