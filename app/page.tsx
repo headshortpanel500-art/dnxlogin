@@ -1857,7 +1857,7 @@ export default function Home() {
                         <tbody className="divide-y divide-white/5">
                           {uploadedFiles.map((file) => {
                             // ✅ স্লাগ বা permanentLinkId বা fileId দিয়ে লিংক তৈরি
-                            const downloadLink = `${window.location.origin}/download/${file.slug || file.permanentLinkId || file.fileId}`;
+                            const downloadLink = `${window.location.origin}/api/download/${file.slug || file.permanentLinkId || file.fileId}`;
                             const isCopied = copiedLink === file.fileId;
                             
                             return (
