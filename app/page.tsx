@@ -679,7 +679,7 @@ export default function Home() {
             <div className="absolute -inset-4 bg-gradient-to-r from-pink-500/20 via-purple-500/20 to-blue-500/20 rounded-3xl blur-2xl animate-pulse"></div>
           </div>
           <div className="text-center space-y-2">
-            <div className={`text-3xl font-bold ${gradientText}`}>ADIAT X CHEAT</div>
+            <div className={`text-3xl font-bold ${gradientText}`}>AIM PRO</div>
             <div className="text-sm font-medium text-white/40 tracking-[0.3em]">[ SYSTEM INITIALIZING ]</div>
             <div className="flex items-center justify-center gap-2 mt-4">
               <div className="w-2 h-2 rounded-full bg-pink-500 animate-bounce [animation-delay:-0.3s] shadow-[0_0_10px_rgba(236,72,153,0.5)]"></div>
