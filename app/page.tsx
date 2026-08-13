@@ -309,7 +309,7 @@ export default function Home() {
       }
       const validFiles = files.filter(f => f.size <= 50 * 1024 * 1024);
       if (validFiles.length !== files.length) {
-        showToast('কিছু ফাইল ১৫MB এর বেশি!', 'error');
+        showToast('কিছু ফাইল 50MB এর বেশি!', 'error');
       }
       setSelectedFiles(validFiles);
     }
