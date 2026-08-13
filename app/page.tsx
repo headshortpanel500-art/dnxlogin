@@ -111,6 +111,8 @@ interface IUploadedFile {
   uploadDate: string;
   downloadCount?: number;
   fileId: string;
+  permanentLinkId?: string;
+  slug?: string;
 }
 
 export default function Home() {
@@ -305,11 +307,12 @@ export default function Home() {
       const files = Array.from(e.target.files);
       if (files.length > 3) {
         showToast('সর্বোচ্চ ৩টি ফাইল সিলেক্ট করা যাবে!', 'error');
+        e.target.value = '';
         return;
       }
       const validFiles = files.filter(f => f.size <= 50 * 1024 * 1024);
       if (validFiles.length !== files.length) {
-        showToast('কিছু ফাইল 50MB এর বেশি!', 'error');
+        showToast('কিছু ফাইল ৫০MB এর বেশি!', 'error');
       }
       setSelectedFiles(validFiles);
     }
@@ -344,7 +347,7 @@ export default function Home() {
       if (data.success) {
         showToast(
           replaceFileId 
-            ? `${selectedFiles.length}টি ফাইল আপডেট সফল!` 
+            ? `${selectedFiles.length}টি ফাইল আপডেট সফল! লিংক একই থাকবে ✅` 
             : `${selectedFiles.length}টি ফাইল আপলোড সফল!`, 
           'success'
         );
@@ -1199,11 +1202,11 @@ export default function Home() {
                         className="w-full bg-black/50 border border-white/10 rounded-xl md:rounded-2xl px-4 py-3 text-xs md:text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all duration-300 hover:border-purple-500/30 cursor-pointer"
                       >
                         <option value="0">♾️ Unlimited</option>
-                        <option value="1"> 📱 1 Device</option>
-                        <option value="2"> 📱2 Devices</option>
-                        <option value="3"> 📱 3 Devices</option>
-                        <option value="4"> 📱 4 Devices</option>
-                        <option value="5"> 📱 5 Devices</option>
+                        <option value="1">📱 1 Device</option>
+                        <option value="2">📱📱 2 Devices</option>
+                        <option value="3">📱📱📱 3 Devices</option>
+                        <option value="4">📱📱📱📱 4 Devices</option>
+                        <option value="5">📱📱📱📱📱 5 Devices</option>
                         <option value="10">📱 10 Devices</option>
                         <option value="20">📱 20 Devices</option>
                         <option value="50">📱 50 Devices</option>
@@ -1663,7 +1666,7 @@ export default function Home() {
                           }
                           const validFiles = files.filter(f => f.size <= 50 * 1024 * 1024);
                           if (validFiles.length !== files.length) {
-                            showToast('কিছু ফাইল ১৫MB এর বেশি!', 'error');
+                            showToast('কিছু ফাইল ৫০MB এর বেশি!', 'error');
                           }
                           setSelectedFiles(validFiles);
                         }}
@@ -1713,7 +1716,7 @@ export default function Home() {
                             </div>
                             <div>
                               <p className="text-sm font-medium text-white/60">ফাইল ড্র্যাগ করুন অথবা ক্লিক করুন</p>
-                              <p className="text-xs text-white/30 mt-1">সর্বোচ্চ ৩টি ফাইল, প্রতি ফাইল ১৫MB পর্যন্ত</p>
+                              <p className="text-xs text-white/30 mt-1">সর্বোচ্চ ৩টি ফাইল, প্রতি ফাইল ৫০MB পর্যন্ত</p>
                             </div>
                             <div className="flex justify-center gap-2 text-[10px] text-white/20">
                               <span>📁 সব ধরনের ফাইল</span>
@@ -1794,7 +1797,7 @@ export default function Home() {
                         </div>
                         <div className="flex items-center gap-2 text-xs text-white/30 mt-1">
                           <HardDrive className="w-3 h-3" />
-                          <span>সর্বোচ্চ ১৫MB প্রতি ফাইল</span>
+                          <span>সর্বোচ্চ ৫০MB প্রতি ফাইল</span>
                         </div>
                       </div>
 
@@ -1853,7 +1856,8 @@ export default function Home() {
                         </thead>
                         <tbody className="divide-y divide-white/5">
                           {uploadedFiles.map((file) => {
-                            const downloadLink = `${window.location.origin}/api/download/${file.fileId}`;
+                            // ✅ স্লাগ বা permanentLinkId বা fileId দিয়ে লিংক তৈরি
+                            const downloadLink = `${window.location.origin}/download/${file.slug || file.permanentLinkId || file.fileId}`;
                             const isCopied = copiedLink === file.fileId;
                             
                             return (

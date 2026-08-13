@@ -5,7 +5,6 @@ import { FileMetadata } from '@/models/User';
 import { getGridFSBucket } from '@/lib/gridfs';
 import mongoose from 'mongoose';
 
-// সব ফাইলের তালিকা
 export async function GET() {
   try {
     await connectDB();
@@ -16,11 +15,14 @@ export async function GET() {
     const formattedFiles = files.map((file: any) => ({
       _id: file._id,
       fileId: file.fileId,
+      permanentLinkId: file.permanentLinkId,
+      slug: file.slug, // ✅ স্লাগ যোগ
       filename: file.filename,
       contentType: file.contentType,
       size: file.size,
       uploadDate: file.uploadDate,
       downloadCount: file.downloadCount || 0,
+      downloadLink: `/download/${file.slug}`, // ✅ নাম দিয়ে লিংক
     }));
 
     return NextResponse.json({
@@ -37,7 +39,6 @@ export async function GET() {
   }
 }
 
-// ফাইল ডিলিট
 export async function DELETE(req: NextRequest) {
   try {
     await connectDB();
@@ -51,7 +52,13 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const metadata = await FileMetadata.findOne({ fileId });
+    let metadata = await FileMetadata.findOne({ slug: fileId });
+    if (!metadata) {
+      metadata = await FileMetadata.findOne({ permanentLinkId: fileId });
+    }
+    if (!metadata) {
+      metadata = await FileMetadata.findOne({ fileId: fileId });
+    }
 
     if (!metadata) {
       return NextResponse.json(
@@ -62,12 +69,12 @@ export async function DELETE(req: NextRequest) {
 
     const gridFSBucket = getGridFSBucket();
     try {
-      await gridFSBucket.delete(new mongoose.Types.ObjectId(fileId));
+      await gridFSBucket.delete(new mongoose.Types.ObjectId(metadata.fileId));
     } catch (error) {
       console.error('GridFS delete error:', error);
     }
 
-    await FileMetadata.deleteOne({ fileId });
+    await FileMetadata.deleteOne({ _id: metadata._id });
 
     return NextResponse.json({
       success: true,

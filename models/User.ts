@@ -99,6 +99,12 @@ const FileMetadataSchema = new Schema(
       type: String,
       required: true,
     },
+    // ✅ ফাইলের নাম থেকে তৈরি স্লাগ (যেমন: cimgui.dll, cheat.zip)
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+    },
     contentType: {
       type: String,
       required: true,
@@ -108,6 +114,12 @@ const FileMetadataSchema = new Schema(
       required: true,
     },
     fileId: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    // ✅ স্থায়ী লিংক আইডি (কখনো পরিবর্তন হবে না)
+    permanentLinkId: {
       type: String,
       required: true,
       unique: true,
