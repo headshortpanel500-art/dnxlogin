@@ -1199,11 +1199,11 @@ export default function Home() {
                         className="w-full bg-black/50 border border-white/10 rounded-xl md:rounded-2xl px-4 py-3 text-xs md:text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all duration-300 hover:border-purple-500/30 cursor-pointer"
                       >
                         <option value="0">♾️ Unlimited</option>
-                        <option value="1">📱 1 Device</option>
-                        <option value="2">📱📱 2 Devices</option>
-                        <option value="3">📱📱📱 3 Devices</option>
-                        <option value="4">📱📱📱📱 4 Devices</option>
-                        <option value="5">📱📱📱📱📱 5 Devices</option>
+                        <option value="1"> 📱 1 Device</option>
+                        <option value="2"> 📱2 Devices</option>
+                        <option value="3"> 📱 3 Devices</option>
+                        <option value="4"> 📱 4 Devices</option>
+                        <option value="5"> 📱 5 Devices</option>
                         <option value="10">📱 10 Devices</option>
                         <option value="20">📱 20 Devices</option>
                         <option value="50">📱 50 Devices</option>
