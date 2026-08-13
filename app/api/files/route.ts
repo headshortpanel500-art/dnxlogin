@@ -62,7 +62,7 @@ export async function DELETE(req: NextRequest) {
 
     if (!metadata) {
       return NextResponse.json(
-        { success: false, error: 'ফাইল পাওয়া যায়নি' },
+        { success: false, error: 'ফাইল পাওয়া যায়নি⛔' },
         { status: 404 }
       );
     }
