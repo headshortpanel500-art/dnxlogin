@@ -22,7 +22,7 @@ export async function GET() {
       size: file.size,
       uploadDate: file.uploadDate,
       downloadCount: file.downloadCount || 0,
-      downloadLink: `/download/${file.slug}`, // ✅ নাম দিয়ে লিংক
+      downloadLink: `/api/download/${file.slug}`, // ✅ নাম দিয়ে লিংক
     }));
 
     return NextResponse.json({
