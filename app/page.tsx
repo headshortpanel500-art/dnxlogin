@@ -116,6 +116,20 @@ interface IUploadedFile {
   slug?: string;
 }
 
+// Fixed class map for the System Overview cards.
+// Tailwind can't see dynamic classes like `text-${color}-400`, so every
+// class name is written out in full here.
+const statStyles: Record<string, { icon: string; text: string; line: string; hover: string }> = {
+  purple:  { icon: 'bg-purple-500/10 border-purple-500/20 text-purple-400',    text: 'text-purple-400',  line: 'via-purple-500/50',  hover: 'hover:border-purple-500/30' },
+  blue:    { icon: 'bg-blue-500/10 border-blue-500/20 text-blue-400',          text: 'text-blue-400',    line: 'via-blue-500/50',    hover: 'hover:border-blue-500/30' },
+  emerald: { icon: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400', text: 'text-emerald-400', line: 'via-emerald-500/50', hover: 'hover:border-emerald-500/30' },
+  orange:  { icon: 'bg-orange-500/10 border-orange-500/20 text-orange-400',    text: 'text-orange-400',  line: 'via-orange-500/50',  hover: 'hover:border-orange-500/30' },
+  red:     { icon: 'bg-red-500/10 border-red-500/20 text-red-400',             text: 'text-red-400',     line: 'via-red-500/50',     hover: 'hover:border-red-500/30' },
+};
+
+// Background grid pattern (used on every screen)
+const gridBg = "bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSA2MCAwIEwgMCAwIDAgNjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgxNjgsODUsMjU1LDAuMDUpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')]";
+
 export default function Home() {
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -326,7 +340,7 @@ export default function Home() {
 
   const handleUpload = async () => {
     if (selectedFiles.length === 0) {
-      showToast('কোন ফাইল সিলেক্ট করা হয়নি!', 'error');
+      showToast('কোন ফাইল সিলেক্ট করা হয়নি!', 'error');
       return;
     }
 
@@ -365,7 +379,7 @@ export default function Home() {
         showToast(data.error || 'আপলোড ব্যর্থ!', 'error');
       }
     } catch (error) {
-      showToast('আপলোড করতে সমস্যা হয়েছে!', 'error');
+      showToast('আপলোড করতে সমস্যা হয়েছে!', 'error');
     } finally {
       setUploadLoading(false);
       setTimeout(() => setUploadProgress(0), 3000);
@@ -384,21 +398,21 @@ export default function Home() {
 
       const data = await res.json();
       if (data.success) {
-        showToast('ফাইল ডিলিট করা হয়েছে!', 'success');
+        showToast('ফাইল ডিলিট করা হয়েছে!', 'success');
         fetchUploadedFiles();
         if (replaceFileId === fileId) setReplaceFileId(null);
       } else {
         showToast(data.error || 'ডিলিট ব্যর্থ!', 'error');
       }
     } catch {
-      showToast('ডিলিট করতে সমস্যা হয়েছে!', 'error');
+      showToast('ডিলিট করতে সমস্যা হয়েছে!', 'error');
     }
   };
 
   const copyToClipboard = (link: string, fileId: string) => {
     navigator.clipboard.writeText(link);
     setCopiedLink(fileId);
-    showToast('লিংক কপি করা হয়েছে!', 'success');
+    showToast('লিংক কপি করা হয়েছে!', 'success');
     setTimeout(() => setCopiedLink(null), 3000);
   };
 
@@ -680,7 +694,7 @@ export default function Home() {
       <div className="min-h-screen bg-[#0a0a0f] text-white flex items-center justify-center font-sans relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-pink-900/20 to-blue-900/20"></div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSA2MCAwIEwgMCAwIDAgNjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgxNjgsODUsMjU1LDAuMDUpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-50"></div>
+        <div className={`absolute inset-0 ${gridBg} opacity-50`}></div>
         
         <div className="relative flex flex-col items-center gap-6 p-8 bg-[#0a0a1a]/90 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-2xl shadow-purple-500/10">
           <div className="relative">
@@ -712,7 +726,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-pink-900/20 to-blue-900/20"></div>
         <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-3xl"></div>
         <div className="absolute -bottom-40 -left-40 w-[600px] h-[600px] bg-pink-600/10 rounded-full blur-3xl"></div>
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSA2MCAwIEwgMCAwIDAgNjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgxNjgsODUsMjU1LDAuMDUpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30"></div>
+        <div className={`absolute inset-0 ${gridBg} opacity-30`}></div>
 
         <div className="w-full max-w-md relative z-10">
           <div className="relative group">
@@ -830,7 +844,7 @@ export default function Home() {
     <div className="min-h-screen bg-[#0a0a0f] text-white font-sans relative overflow-hidden selection:bg-purple-500/30 selection:text-white">
       {/* Background effects */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSA2MCAwIEwgMCAwIDAgNjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgxNjgsODUsMjU1LDAuMDUpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30"></div>
+        <div className={`absolute inset-0 ${gridBg} opacity-30`}></div>
         <div className="absolute -top-[40%] -right-[20%] w-[800px] h-[800px] bg-purple-600/5 rounded-full blur-3xl"></div>
         <div className="absolute -bottom-[40%] -left-[20%] w-[800px] h-[800px] bg-pink-600/5 rounded-full blur-3xl"></div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-blue-600/5 rounded-full blur-3xl"></div>
@@ -1249,12 +1263,12 @@ export default function Home() {
                         {editingId ? (
                           <>
                             <Save className="w-4 h-4" />
-                            <span className="hidden xs:inline">Update</span>
+                            <span>Update</span>
                           </>
                         ) : (
                           <>
                             <Plus className="w-4 h-4" />
-                            <span className="hidden xs:inline">Generate</span>
+                            <span>Generate</span>
                           </>
                         )}
                       </button>
@@ -1289,7 +1303,7 @@ export default function Home() {
                       <div className="p-1.5 bg-gradient-to-r from-pink-500/10 to-purple-500/10 rounded-lg border border-purple-500/20">
                         <Database className="w-4 h-4 md:w-5 md:h-5 text-purple-400" />
                       </div>
-                      <span className="hidden xs:inline">Registered Credentials</span>
+                      <span>Registered Credentials</span>
                       <span className="text-[10px] md:text-xs text-white/30 font-normal ml-1 bg-white/5 px-3 py-0.5 rounded-full border border-white/10">
                         {filteredUsers.length}
                       </span>
@@ -1355,7 +1369,7 @@ export default function Home() {
                               </div>
                               <div className="flex items-center gap-2 flex-shrink-0">
                                 <span
-                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border ${
+                                  className={`inline-flex items-center gap-1.5 whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-semibold border ${
                                     isExpired
                                       ? 'bg-red-500/10 text-red-300 border-red-500/20'
                                       : isDeviceLimitReached && deviceLimit > 0
@@ -1467,19 +1481,19 @@ export default function Home() {
 
                   {/* Desktop Table View */}
                   <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full text-left border-collapse text-sm">
+                    <table className="w-full min-w-[1000px] text-left border-collapse text-sm whitespace-nowrap">
                       <thead>
                         <tr className="bg-black/30 text-white/30 text-xs uppercase tracking-widest border-b border-white/10">
-                          <th className="p-4 pl-6 font-medium">User</th>
-                          <th className="p-4 font-medium">License Key</th>
-                          <th className="p-4 font-medium">Password</th>
-                          <th className="p-4 font-medium">Created By</th>
-                          <th className="p-4 font-medium">Device Limit</th>
-                          <th className="p-4 font-medium">Devices</th>
-                          <th className="p-4 font-medium">HWID</th>
-                          <th className="p-4 font-medium">Status</th>
-                          <th className="p-4 font-medium">Expires</th>
-                          <th className="p-4 text-right pr-6 font-medium">Actions</th>
+                          <th className="px-3 py-3 pl-6 font-medium">User</th>
+                          <th className="px-3 py-3 font-medium">License Key</th>
+                          <th className="px-3 py-3 font-medium">Password</th>
+                          <th className="px-3 py-3 font-medium">Created By</th>
+                          <th className="px-3 py-3 font-medium">Device Limit</th>
+                          <th className="px-3 py-3 font-medium">Devices</th>
+                          <th className="px-3 py-3 font-medium">HWID</th>
+                          <th className="px-3 py-3 font-medium">Status</th>
+                          <th className="px-3 py-3 font-medium">Expires</th>
+                          <th className="sticky right-0 bg-[#12121f] px-3 py-3 pr-6 text-right font-medium">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/5">
@@ -1506,69 +1520,97 @@ export default function Home() {
                             const deviceLimit = user.deviceLimit || 0;
                             const isDeviceLimitReached = deviceLimit > 0 && deviceCount >= deviceLimit;
 
+                            const badge =
+                              'inline-flex items-center gap-1.5 whitespace-nowrap px-2.5 py-1 rounded-full text-xs font-medium border';
+                            const actionBtn =
+                              'inline-flex items-center justify-center gap-1.5 h-8 min-w-8 px-2 rounded-lg border text-xs font-medium transition-all duration-200';
+
                             return (
-                              <tr key={user._id} className="hover:bg-white/5 transition duration-200 group">
-                                <td className="p-4 pl-6 font-bold text-white">
-                                  <div className="flex items-center gap-2">
-                                    <div className="relative">
-                                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500/30 via-purple-500/30 to-blue-500/30 flex items-center justify-center text-xs font-bold text-white border border-white/10">
-                                        {user.username.charAt(0).toUpperCase()}
-                                      </div>
-                                      <div className="absolute -inset-1 bg-purple-500/10 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition"></div>
+                              <tr key={user._id} className="group hover:bg-white/5 transition duration-200">
+                                {/* User */}
+                                <td className="px-3 py-3 pl-6 font-bold text-white">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-pink-500/30 via-purple-500/30 to-blue-500/30 flex items-center justify-center text-xs font-bold text-white border border-white/10">
+                                      {user.username.charAt(0).toUpperCase()}
                                     </div>
-                                    {user.username}
+                                    <span className="max-w-[140px] truncate" title={user.username}>{user.username}</span>
                                   </div>
                                 </td>
-                                <td className="p-4">
+
+                                {/* License key */}
+                                <td className="px-3 py-3">
                                   {user.licenseKey ? (
                                     <button
                                       onClick={() => copyLicenseKey(user.licenseKey!)}
                                       title="Copy license key"
                                       className="inline-flex items-center gap-1.5 font-mono text-xs text-purple-300 hover:text-purple-200 transition"
                                     >
-                                      <Key className="w-3.5 h-3.5 flex-shrink-0" />
+                                      <Key className="w-3.5 h-3.5 shrink-0" />
                                       {user.licenseKey}
-                                      <Copy className="w-3 h-3 opacity-40" />
+                                      <Copy className="w-3 h-3 shrink-0 opacity-40" />
                                     </button>
                                   ) : (
                                     <span className="text-white/20 text-xs">no key</span>
                                   )}
                                 </td>
-                                <td className="p-4 text-white/30 font-mono text-xs">{user.password || '••••••••'}</td>
-                                <td className="p-4">
-                                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${
-                                    user.createdBy === 'admin' 
-                                      ? 'bg-purple-500/10 text-purple-300 border-purple-500/20'
-                                      : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
-                                  }`}>
-                                    {user.createdBy === 'admin' ? '👑 Admin' : `🏪 ${user.createdBy || 'Unknown'}`}
-                                  </span>
-                                </td>
-                                <td className="p-4">
-                                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${
-                                    deviceLimit === 0
-                                      ? 'bg-blue-500/10 text-blue-300 border-blue-500/20'
-                                      : 'bg-purple-500/10 text-purple-300 border-purple-500/20'
-                                  }`}>
-                                    {deviceLimit === 0 ? '♾️ Unlimited' : `📱 ${deviceLimit}`}
-                                  </span>
-                                </td>
-                                <td className="p-4">
-                                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${
-                                    deviceCount > 0
-                                      ? isDeviceLimitReached
-                                        ? 'bg-yellow-500/10 text-yellow-300 border-yellow-500/20'
+
+                                {/* Password */}
+                                <td className="px-3 py-3 text-white/30 font-mono text-xs">{user.password || '••••••••'}</td>
+
+                                {/* Created by */}
+                                <td className="px-3 py-3">
+                                  <span
+                                    className={`${badge} ${
+                                      user.createdBy === 'admin'
+                                        ? 'bg-purple-500/10 text-purple-300 border-purple-500/20'
                                         : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
-                                      : 'bg-white/5 text-white/30 border-white/10'
-                                  }`}>
-                                    {deviceCount > 0 ? `📱 ${deviceCount}${deviceLimit > 0 ? `/${deviceLimit}` : ''}` : 'No devices'}
-                                    {isDeviceLimitReached && deviceLimit > 0 && ' 🔒'}
+                                    }`}
+                                  >
+                                    {user.createdBy === 'admin' ? (
+                                      <Crown className="w-3 h-3 shrink-0 text-yellow-400" />
+                                    ) : (
+                                      <Store className="w-3 h-3 shrink-0" />
+                                    )}
+                                    {user.createdBy === 'admin' ? 'Admin' : user.createdBy || 'Unknown'}
                                   </span>
                                 </td>
-                                <td className="p-4 text-white/30 font-mono text-xs">
+
+                                {/* Device limit */}
+                                <td className="px-3 py-3">
+                                  <span
+                                    className={`${badge} ${
+                                      deviceLimit === 0
+                                        ? 'bg-blue-500/10 text-blue-300 border-blue-500/20'
+                                        : 'bg-purple-500/10 text-purple-300 border-purple-500/20'
+                                    }`}
+                                  >
+                                    {deviceLimit !== 0 && <Smartphone className="w-3 h-3 shrink-0" />}
+                                    {deviceLimit === 0 ? 'Unlimited' : deviceLimit}
+                                  </span>
+                                </td>
+
+                                {/* Devices */}
+                                <td className="px-3 py-3">
+                                  <span
+                                    className={`${badge} ${
+                                      deviceCount > 0
+                                        ? isDeviceLimitReached
+                                          ? 'bg-yellow-500/10 text-yellow-300 border-yellow-500/20'
+                                          : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+                                        : 'bg-white/5 text-white/30 border-white/10'
+                                    }`}
+                                  >
+                                    {deviceCount > 0 && <Smartphone className="w-3 h-3 shrink-0" />}
+                                    {deviceCount > 0 ? `${deviceCount}${deviceLimit > 0 ? `/${deviceLimit}` : ''}` : 'No devices'}
+                                    {isDeviceLimitReached && deviceLimit > 0 && <Lock className="w-3 h-3 shrink-0" />}
+                                  </span>
+                                </td>
+
+                                {/* HWID */}
+                                <td className="px-3 py-3 text-white/30 font-mono text-xs">
                                   {hasHwid ? (
-                                    <span className="text-emerald-400 flex items-center gap-1" title={`Full HWID: ${user.hwid}`}>
-                                      <Monitor className="w-3 h-3" />
+                                    <span className="text-emerald-400 inline-flex items-center gap-1.5" title={`Full HWID: ${user.hwid}`}>
+                                      <Monitor className="w-3 h-3 shrink-0" />
                                       {user.hwid && user.hwid.length > 16 ? (
                                         <>
                                           {user.hwid.substring(0, 8)}...{user.hwid.substring(user.hwid.length - 8)}
@@ -1578,79 +1620,99 @@ export default function Home() {
                                       )}
                                     </span>
                                   ) : (
-                                    <span className="text-white/20 flex items-center gap-1">
-                                      <Ban className="w-3 h-3" />
+                                    <span className="text-white/20 inline-flex items-center gap-1.5">
+                                      <Ban className="w-3 h-3 shrink-0" />
                                       Not Registered
                                     </span>
                                   )}
                                 </td>
-                                <td className="p-4">
-                                  <span
-                                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
-                                      isExpired
-                                        ? 'bg-red-500/10 text-red-300 border-red-500/20'
-                                        : isDeviceLimitReached && deviceLimit > 0
-                                        ? 'bg-yellow-500/10 text-yellow-300 border-yellow-500/20'
-                                        : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
-                                    }`}
-                                  >
-                                    <span className={`w-1.5 h-1.5 rounded-full shadow-[0_0_10px] ${
-                                      isExpired ? 'bg-red-400 shadow-red-400/50' : 
-                                      isDeviceLimitReached && deviceLimit > 0 ? 'bg-yellow-400 shadow-yellow-400/50' : 'bg-emerald-400 shadow-emerald-400/50'
-                                    }`}></span>
-                                    {isExpired ? 'Expired' : 
-                                     isDeviceLimitReached && deviceLimit > 0 ? 'Full' : 'Active'}
-                                  </span>
-                                  {user.hwidReset && (
-                                    <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-yellow-500/10 text-yellow-300 border border-yellow-500/20">
-                                      <RefreshCw className="w-3 h-3 animate-spin" />
-                                      Reset Pending
+
+                                {/* Status */}
+                                <td className="px-3 py-3">
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className={`${badge} font-semibold ${
+                                        isExpired
+                                          ? 'bg-red-500/10 text-red-300 border-red-500/20'
+                                          : isDeviceLimitReached && deviceLimit > 0
+                                          ? 'bg-yellow-500/10 text-yellow-300 border-yellow-500/20'
+                                          : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+                                      }`}
+                                    >
+                                      <span
+                                        className={`w-1.5 h-1.5 rounded-full shadow-[0_0_10px] ${
+                                          isExpired
+                                            ? 'bg-red-400 shadow-red-400/50'
+                                            : isDeviceLimitReached && deviceLimit > 0
+                                            ? 'bg-yellow-400 shadow-yellow-400/50'
+                                            : 'bg-emerald-400 shadow-emerald-400/50'
+                                        }`}
+                                      ></span>
+                                      {isExpired ? 'Expired' : isDeviceLimitReached && deviceLimit > 0 ? 'Full' : 'Active'}
                                     </span>
-                                  )}
+                                    {user.hwidReset && (
+                                      <span className="inline-flex items-center gap-1 whitespace-nowrap px-2 py-0.5 rounded-full text-[10px] font-medium bg-yellow-500/10 text-yellow-300 border border-yellow-500/20">
+                                        <RefreshCw className="w-3 h-3 animate-spin" />
+                                        Reset Pending
+                                      </span>
+                                    )}
+                                  </div>
                                 </td>
-                                <td className="p-4 text-white/40 text-xs flex items-center gap-1">
-                                  <Clock className="w-3 h-3 text-white/20" />
-                                  {new Date(user.expiresAt).toLocaleDateString(undefined, {
-                                    year: 'numeric',
-                                    month: 'short',
-                                    day: 'numeric',
-                                  })}
+
+                                {/* Expires — flex lives on an inner div, not on the <td> */}
+                                <td className="px-3 py-3 text-white/40 text-xs">
+                                  <div className="flex items-center gap-1.5">
+                                    <Clock className="w-3 h-3 shrink-0 text-white/20" />
+                                    {new Date(user.expiresAt).toLocaleDateString(undefined, {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric',
+                                    })}
+                                  </div>
                                 </td>
-                                <td className="p-4 text-right pr-6">
-                                  <div className="flex flex-wrap justify-end gap-1.5">
+
+                                {/* Actions — one compact row, pinned to the right while scrolling */}
+                                <td className="sticky right-0 bg-[#12121f] group-hover:bg-[#1a1a2b] transition-colors px-3 py-3 pr-6 text-right shadow-[-12px_0_12px_-12px_rgba(0,0,0,0.6)]">
+                                  <div className="flex flex-nowrap items-center justify-end gap-1.5">
                                     <button
                                       onClick={() => handleEdit(user)}
-                                      className="bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 border border-purple-500/20 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-200 hover:shadow-[0_0_20px_rgba(168,85,247,0.2)] flex items-center gap-1"
+                                      title="Edit"
+                                      aria-label="Edit"
+                                      className={`${actionBtn} bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 border-purple-500/20`}
                                     >
-                                      <Edit className="w-3 h-3" />
-                                      Edit
+                                      <Edit className="w-3.5 h-3.5" />
+                                      <span className="hidden 2xl:inline">Edit</span>
                                     </button>
                                     {hasHwid && (
                                       <>
                                         <button
                                           onClick={() => handleClearAllHwids(user.username)}
-                                          className="bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 border border-blue-500/20 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-200 hover:shadow-[0_0_20px_rgba(59,130,246,0.2)] flex items-center gap-1"
                                           title="Clear all registered devices"
+                                          aria-label="Clear all registered devices"
+                                          className={`${actionBtn} bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 border-blue-500/20`}
                                         >
-                                          <Trash2 className="w-3 h-3" />
-                                          Clear
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                          <span className="hidden 2xl:inline">Clear</span>
                                         </button>
                                         <button
                                           onClick={() => handleResetHwid(user.username)}
-                                          className="bg-yellow-500/10 text-yellow-300 hover:bg-yellow-500/20 border border-yellow-500/20 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-200 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] flex items-center gap-1"
                                           title="Reset HWID"
+                                          aria-label="Reset HWID"
+                                          className={`${actionBtn} bg-yellow-500/10 text-yellow-300 hover:bg-yellow-500/20 border-yellow-500/20`}
                                         >
-                                          <RefreshCw className="w-3 h-3" />
-                                          Reset
+                                          <RefreshCw className="w-3.5 h-3.5" />
+                                          <span className="hidden 2xl:inline">Reset</span>
                                         </button>
                                       </>
                                     )}
                                     <button
                                       onClick={() => handleDelete(user._id)}
-                                      className="bg-red-500/10 text-red-300 hover:bg-red-500/20 border border-red-500/20 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-200 hover:shadow-[0_0_20px_rgba(244,63,94,0.2)] flex items-center gap-1"
+                                      title="Delete user"
+                                      aria-label="Delete user"
+                                      className={`${actionBtn} bg-red-500/10 text-red-300 hover:bg-red-500/20 border-red-500/20`}
                                     >
-                                      <Trash2 className="w-3 h-3" />
-                                      Delete
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                      <span className="hidden 2xl:inline">Delete</span>
                                     </button>
                                   </div>
                                 </td>
@@ -1720,7 +1782,7 @@ export default function Home() {
                           <div className="space-y-3">
                             <div className="flex items-center justify-center gap-2 text-emerald-400">
                               <CheckCircle className="w-8 h-8" />
-                              <span className="text-sm font-medium">{selectedFiles.length}টি ফাইল সিলেক্ট করা হয়েছে</span>
+                              <span className="text-sm font-medium">{selectedFiles.length}টি ফাইল সিলেক্ট করা হয়েছে</span>
                             </div>
                             <div className="flex flex-wrap justify-center gap-2">
                               {selectedFiles.map((file, index) => (
@@ -1830,7 +1892,7 @@ export default function Home() {
                         </div>
                         <div className="flex items-center gap-2 text-xs text-white/30 mt-1">
                           <Clock className="w-3 h-3" />
-                          <span>লিংক এক্সপায়ার হয় না</span>
+                          <span>লিংক এক্সপায়ার হয় না</span>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-white/30 mt-1">
                           <HardDrive className="w-3 h-3" />
@@ -1856,7 +1918,7 @@ export default function Home() {
                       <div className="p-1.5 bg-orange-500/10 rounded-lg border border-orange-500/20">
                         <History className="w-4 h-4 md:w-5 md:h-5 text-orange-400" />
                       </div>
-                      <span className="hidden xs:inline">আপলোড ইতিহাস</span>
+                      <span>আপলোড ইতিহাস</span>
                       <span className="text-[10px] md:text-xs text-white/30 font-normal ml-1 bg-white/5 px-3 py-0.5 rounded-full border border-white/10">
                         {uploadedFiles.length}টি ফাইল
                       </span>
@@ -1876,24 +1938,24 @@ export default function Home() {
                     <div className="p-12 text-center text-white/30">
                       <div className="flex flex-col items-center gap-3">
                         <FolderOpen className="w-12 h-12 text-white/10" />
-                        <p>কোন ফাইল আপলোড করা হয়নি</p>
+                        <p>কোন ফাইল আপলোড করা হয়নি</p>
                       </div>
                     </div>
                   ) : (
                     <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse text-sm">
+                      <table className="w-full text-left border-collapse text-sm whitespace-nowrap">
                         <thead>
                           <tr className="bg-black/30 text-white/30 text-xs uppercase tracking-widest border-b border-white/10">
                             <th className="p-4 pl-6 font-medium">ফাইলের নাম</th>
                             <th className="p-4 font-medium">সাইজ</th>
-                            <th className="p-4 font-medium">আপলোডের সময়</th>
+                            <th className="p-4 font-medium">আপলোডের সময়</th>
                             <th className="p-4 font-medium">ডাউনলোড</th>
                             <th className="p-4 text-right pr-6 font-medium">অ্যাকশন</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
                           {uploadedFiles.map((file) => {
-                            // ✅ স্লাগ বা permanentLinkId বা fileId দিয়ে লিংক তৈরি
+                            // ✅ স্লাগ বা permanentLinkId বা fileId দিয়ে লিংক তৈরি
                             const downloadLink = `${window.location.origin}/api/download/${file.slug || file.permanentLinkId || file.fileId}`;
                             const isCopied = copiedLink === file.fileId;
                             
@@ -1926,7 +1988,7 @@ export default function Home() {
                                   </span>
                                 </td>
                                 <td className="p-4 text-right pr-6">
-                                  <div className="flex items-center justify-end gap-2">
+                                  <div className="flex flex-nowrap items-center justify-end gap-2">
                                     <a
                                       href={downloadLink}
                                       target="_blank"
@@ -2040,7 +2102,7 @@ export default function Home() {
                         className="w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:via-teal-500 hover:to-cyan-500 text-white font-bold py-3 px-4 rounded-xl md:rounded-2xl text-xs md:text-sm transition-all duration-300 shadow-[0_0_30px_rgba(16,185,129,0.2)] hover:shadow-[0_0_50px_rgba(16,185,129,0.4)] flex items-center justify-center gap-2"
                       >
                         <UserPlus className="w-4 h-4" />
-                        <span className="hidden xs:inline">{editingResellerId ? 'Update' : 'Create'}</span>
+                        <span>{editingResellerId ? 'Update' : 'Create'}</span>
                       </button>
                       {editingResellerId && (
                         <button
@@ -2068,7 +2130,7 @@ export default function Home() {
                       <div className="p-1.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
                         <Store className="w-4 h-4 md:w-5 md:h-5 text-emerald-400" />
                       </div>
-                      <span className="hidden xs:inline">Reseller Management</span>
+                      <span>Reseller Management</span>
                       <span className="text-[10px] md:text-xs text-white/30 font-normal ml-1 bg-white/5 px-3 py-0.5 rounded-full border border-white/10">
                         {resellers.length} total
                       </span>
@@ -2148,7 +2210,7 @@ export default function Home() {
                   </div>
 
                   <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full text-left border-collapse text-sm">
+                    <table className="w-full text-left border-collapse text-sm whitespace-nowrap">
                       <thead>
                         <tr className="bg-black/30 text-white/30 text-xs uppercase tracking-widest border-b border-white/10">
                           <th className="p-4 pl-6 font-medium">Reseller</th>
@@ -2209,7 +2271,7 @@ export default function Home() {
                                   </span>
                                 </td>
                                 <td className="p-4 text-right pr-6">
-                                  <div className="flex flex-wrap justify-end gap-1.5">
+                                  <div className="flex flex-nowrap justify-end gap-1.5">
                                     <button
                                       onClick={() => {
                                         setActiveTab('users');
@@ -2393,21 +2455,24 @@ export default function Home() {
                       { icon: Crosshair, label: 'Active', value: activeUsers, color: 'emerald' },
                       { icon: Store, label: 'Resellers', value: resellers.length, color: 'orange' },
                       { icon: Server, label: 'Status', value: serverStatus === 'online' ? 'Online' : 'Offline', color: serverStatus === 'online' ? 'emerald' : 'red' },
-                    ].map((stat, idx) => (
-                      <div key={idx} className="relative group/stat">
-                        <div className="absolute -inset-1 bg-gradient-to-r from-${stat.color}-500/20 to-${stat.color}-600/20 rounded-2xl blur-xl opacity-0 group-hover/stat:opacity-100 transition duration-500"></div>
-                        <div className="relative p-4 bg-black/30 rounded-2xl border border-white/10 text-center hover:border-${stat.color}-500/30 transition-all duration-300">
-                          <div className={`p-2 bg-${stat.color}-500/10 rounded-xl border border-${stat.color}-500/20 w-fit mx-auto mb-2 group-hover/stat:scale-110 transition-transform shadow-[0_0_20px_rgba(${stat.color === 'purple' ? '168,85,247' : stat.color === 'blue' ? '59,130,246' : stat.color === 'emerald' ? '52,211,153' : stat.color === 'orange' ? '251,146,60' : '239,68,68'},0.2)]`}>
-                            <stat.icon className={`w-5 h-5 text-${stat.color}-400`} />
+                    ].map((stat, idx) => {
+                      const s = statStyles[stat.color];
+                      return (
+                        <div
+                          key={idx}
+                          className={`relative overflow-hidden p-4 bg-black/30 rounded-2xl border border-white/10 text-center transition-all duration-300 ${s.hover}`}
+                        >
+                          <div className={`p-2 rounded-xl border w-fit mx-auto mb-2 ${s.icon}`}>
+                            <stat.icon className="w-5 h-5" />
                           </div>
                           <p className="text-[10px] md:text-xs text-white/30 uppercase tracking-widest">{stat.label}</p>
-                          <p className={`text-lg md:text-2xl font-bold text-${stat.color}-400 mt-0.5 md:mt-1`}>
+                          <p className={`text-lg md:text-2xl font-bold mt-0.5 md:mt-1 ${s.text}`}>
                             {stat.value}
                           </p>
-                          <div className={`absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-${stat.color}-500/50 to-transparent`}></div>
+                          <div className={`absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent ${s.line} to-transparent`}></div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
