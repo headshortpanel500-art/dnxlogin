@@ -1480,7 +1480,7 @@ export default function Home() {
                   </div>
 
                   {/* Desktop Table View */}
-                  <div className="hidden md:block overflow-x-auto">
+                  <div className="hidden md:block overflow-x-auto bg-[#16161b]">
                     <table className="w-full min-w-[1000px] text-left border-collapse text-sm whitespace-nowrap">
                       <thead>
                         <tr className="bg-black/30 text-white/30 text-xs uppercase tracking-widest border-b border-white/10">
@@ -1493,7 +1493,7 @@ export default function Home() {
                           <th className="px-3 py-3 font-medium">HWID</th>
                           <th className="px-3 py-3 font-medium">Status</th>
                           <th className="px-3 py-3 font-medium">Expires</th>
-                          <th className="sticky right-0 bg-[#12121f] px-3 py-3 pr-6 text-right font-medium">Actions</th>
+                          <th className="sticky right-0 bg-[#0f0f13] px-3 py-3 pr-6 text-right font-medium">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/5">
@@ -1676,7 +1676,7 @@ export default function Home() {
                                 </td>
 
                                 {/* Actions — one compact row, pinned to the right while scrolling */}
-                                <td className="sticky right-0 bg-[#12121f] group-hover:bg-[#1a1a2b] transition-colors px-3 py-3 pr-4 text-right shadow-[-12px_0_12px_-12px_rgba(0,0,0,0.6)]">
+                                <td className="sticky right-0 bg-[#16161b] group-hover:bg-[#222227] transition-colors duration-200 px-3 py-3 pr-4 text-right">
                                   <div className="flex flex-nowrap items-center justify-end gap-1.5">
                                     <button
                                       onClick={() => handleEdit(user)}
