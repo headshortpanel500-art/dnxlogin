@@ -1,5 +1,5 @@
 // models/user.ts
-import mongoose, { Schema, model, models } from 'mongoose';
+import { Schema, model, models } from 'mongoose';
 
 const UserSchema = new Schema(
   {
@@ -12,6 +12,16 @@ const UserSchema = new Schema(
     password: {
       type: String,
       required: [true, 'Password is required'],
+    },
+    // The value the injected panel sends in `{key}`. Separate from username so a
+    // license can be rotated or resold without renaming the account.
+    // sparse: true keeps every user without a key out of the unique index --
+    // without it Mongo rejects the second document whose licenseKey is null.
+    licenseKey: {
+      type: String,
+      default: null,
+      trim: true,
+      index: { unique: true, sparse: true },
     },
     expiresAt: {
       type: Date,

@@ -1,11 +1,13 @@
 // lib/gridfs.ts
 import mongoose from 'mongoose';
 
-let cachedGridFS: any = (global as any).gridfs || null;
+type Bucket = mongoose.mongo.GridFSBucket;
 
-export function getGridFSBucket() {
-  if (cachedGridFS) {
-    return cachedGridFS;
+const globalForGridfs = globalThis as unknown as { __gridfsBucket?: Bucket };
+
+export function getGridFSBucket(): Bucket {
+  if (globalForGridfs.__gridfsBucket) {
+    return globalForGridfs.__gridfsBucket;
   }
 
   if (!mongoose.connection || !mongoose.connection.db) {
@@ -17,8 +19,7 @@ export function getGridFSBucket() {
     chunkSizeBytes: 1024 * 1024, // 1MB per chunk
   });
 
-  cachedGridFS = bucket;
-  (global as any).gridfs = bucket;
+  globalForGridfs.__gridfsBucket = bucket;
 
   return bucket;
 }

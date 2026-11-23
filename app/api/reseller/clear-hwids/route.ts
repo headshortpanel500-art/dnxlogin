@@ -1,22 +1,24 @@
 // app/api/reseller/clear-hwids/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import { User } from '@/models/User';
+import { requireReseller, unauthorized } from '@/lib/auth';
 
-export async function POST(req: Request) {
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+export async function POST(req: NextRequest) {
+  const session = requireReseller(req);
+  if (!session) return unauthorized();
+
   try {
-    await dbConnect();
     const body = await req.json();
-    const { username, reseller } = body;
+    const { username, reseller: claimed } = body;
 
-    if (!reseller) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    if (claimed && claimed !== session.subject) return unauthorized();
 
-    // Find user and verify it belongs to this reseller
+    await dbConnect();
+
     const user = await User.findOne({ username });
     if (!user) {
       return NextResponse.json(
@@ -25,14 +27,13 @@ export async function POST(req: Request) {
       );
     }
 
-    if (user.createdBy !== reseller) {
+    if (user.createdBy !== session.subject) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized - User does not belong to you' },
         { status: 403 }
       );
     }
 
-    // Clear all registered HWIDs
     user.registeredHwids = [];
     user.hwid = null;
     await user.save();

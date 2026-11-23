@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { ADMIN_COOKIE } from '@/lib/auth';
 
 export async function POST() {
   const response = NextResponse.json({
@@ -6,9 +7,8 @@ export async function POST() {
     message: 'Logged out successfully',
   });
 
-  // কুকি রিমুভ/ক্লিয়ার করা
   response.cookies.set({
-    name: 'admin_session',
+    name: ADMIN_COOKIE,
     value: '',
     httpOnly: true,
     expires: new Date(0),

@@ -1,8 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import User from '@/models/User';
+import { requireAdmin, unauthorized } from '@/lib/auth';
 
-export async function POST(req: Request) {
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+export async function POST(req: NextRequest) {
+  if (!requireAdmin(req)) return unauthorized();
   try {
     await dbConnect();
     const { username } = await req.json();
@@ -22,7 +27,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // Clear all registered HWIDs
+    // Clear every registered device, including the primary HWID. hwidReset goes
+    // back to false so the client is not told "reset pending" forever.
     user.registeredHwids = [];
     user.hwid = null;
     user.hwidReset = false;

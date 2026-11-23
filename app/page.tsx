@@ -82,6 +82,7 @@ interface IUser {
   _id: string;
   username: string;
   password?: string;
+  licenseKey?: string | null;
   expiresAt: string;
   createdAt: string;
   hwid?: string | null;
@@ -183,27 +184,6 @@ export default function Home() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const res = await fetch('/api/admin/check-auth');
-        const data = await res.json();
-        if (data.authenticated) {
-          setIsAuthenticated(true);
-          fetchUsers();
-          fetchResellers();
-          fetchServerSettings();
-          fetchUploadedFiles();
-        } else {
-          setIsAuthenticated(false);
-        }
-      } catch {
-        setIsAuthenticated(false);
-      }
-    };
-    checkAuth();
-  }, []);
-
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginLoading(true);
@@ -301,6 +281,32 @@ export default function Home() {
     }
   };
 
+  // Placed after the four fetchers it calls. A useEffect that references a
+  // `const` declared further down the component body works at runtime but the
+  // react-hooks rule rejects it, and the read is genuinely fragile: the closure
+  // captures whatever the binding held at call time.
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/admin/check-auth');
+        const data = await res.json();
+        if (data.authenticated) {
+          setIsAuthenticated(true);
+          fetchUsers();
+          fetchResellers();
+          fetchServerSettings();
+          fetchUploadedFiles();
+        } else {
+          setIsAuthenticated(false);
+        }
+      } catch {
+        setIsAuthenticated(false);
+      }
+    };
+    checkAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Upload Functions
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -394,6 +400,11 @@ export default function Home() {
     setCopiedLink(fileId);
     showToast('লিংক কপি করা হয়েছে!', 'success');
     setTimeout(() => setCopiedLink(null), 3000);
+  };
+
+  const copyLicenseKey = (key: string) => {
+    navigator.clipboard.writeText(key);
+    showToast(`লাইসেন্স কী কপি: ${key}`, 'success');
   };
 
   const formatFileSize = (bytes: number) => {
@@ -1330,6 +1341,16 @@ export default function Home() {
                                 <div className="min-w-0">
                                   <p className="text-sm font-bold text-white truncate">{user.username}</p>
                                   <p className="text-xs text-white/30 truncate">{user.password || '••••••••'}</p>
+                                  {user.licenseKey && (
+                                    <button
+                                      onClick={() => copyLicenseKey(user.licenseKey!)}
+                                      className="mt-1 inline-flex items-center gap-1 font-mono text-[10px] text-purple-300/80 hover:text-purple-200 transition"
+                                    >
+                                      <Key className="w-3 h-3 flex-shrink-0" />
+                                      <span className="truncate">{user.licenseKey}</span>
+                                      <Copy className="w-3 h-3 opacity-40 flex-shrink-0" />
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                               <div className="flex items-center gap-2 flex-shrink-0">
@@ -1450,6 +1471,7 @@ export default function Home() {
                       <thead>
                         <tr className="bg-black/30 text-white/30 text-xs uppercase tracking-widest border-b border-white/10">
                           <th className="p-4 pl-6 font-medium">User</th>
+                          <th className="p-4 font-medium">License Key</th>
                           <th className="p-4 font-medium">Password</th>
                           <th className="p-4 font-medium">Created By</th>
                           <th className="p-4 font-medium">Device Limit</th>
@@ -1463,7 +1485,7 @@ export default function Home() {
                       <tbody className="divide-y divide-white/5">
                         {loading ? (
                           <tr>
-                            <td colSpan={9} className="p-12 text-center text-white/30">
+                            <td colSpan={10} className="p-12 text-center text-white/30">
                               <div className="flex items-center justify-center gap-3">
                                 <RefreshCw className="w-5 h-5 text-purple-400 animate-spin" />
                                 Loading...
@@ -1472,7 +1494,7 @@ export default function Home() {
                           </tr>
                         ) : filteredUsers.length === 0 ? (
                           <tr>
-                            <td colSpan={9} className="p-12 text-center text-white/30">
+                            <td colSpan={10} className="p-12 text-center text-white/30">
                               No credentials found.
                             </td>
                           </tr>
@@ -1496,6 +1518,21 @@ export default function Home() {
                                     </div>
                                     {user.username}
                                   </div>
+                                </td>
+                                <td className="p-4">
+                                  {user.licenseKey ? (
+                                    <button
+                                      onClick={() => copyLicenseKey(user.licenseKey!)}
+                                      title="Copy license key"
+                                      className="inline-flex items-center gap-1.5 font-mono text-xs text-purple-300 hover:text-purple-200 transition"
+                                    >
+                                      <Key className="w-3.5 h-3.5 flex-shrink-0" />
+                                      {user.licenseKey}
+                                      <Copy className="w-3 h-3 opacity-40" />
+                                    </button>
+                                  ) : (
+                                    <span className="text-white/20 text-xs">no key</span>
+                                  )}
                                 </td>
                                 <td className="p-4 text-white/30 font-mono text-xs">{user.password || '••••••••'}</td>
                                 <td className="p-4">

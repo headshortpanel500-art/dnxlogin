@@ -6,6 +6,7 @@ import { getGridFSBucket } from '@/lib/gridfs';
 import mongoose from 'mongoose';
 import { Readable } from 'stream';
 import { randomUUID } from 'crypto';
+import { errMsg } from '@/lib/errors';
 
 // ✅ ফাইলের নাম থেকে স্লাগ তৈরি করার ফাংশন
 function generateSlug(filename: string): string {
@@ -117,9 +118,11 @@ export async function POST(req: NextRequest) {
       }
 
       // GridFS-এ ফাইল আপলোড
+      // contentType is not a GridFSBucketWriteStreamOptions field -- it belongs
+      // in metadata, which is where the download route reads it from anyway.
       const uploadStream = gridFSBucket.openUploadStream(file.name, {
-        contentType: file.type || 'application/octet-stream',
         metadata: {
+          contentType: file.type || 'application/octet-stream',
           originalName: file.name,
           uploadedAt: new Date(),
           permanentLinkId: permanentLinkId,
@@ -165,10 +168,10 @@ export async function POST(req: NextRequest) {
       fileIds: uploadedFileIds,
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Upload error:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'আপলোড ব্যর্থ' },
+      { success: false, error: errMsg(error, 'আপলোড ব্যর্থ'), },
       { status: 500 }
     );
   }

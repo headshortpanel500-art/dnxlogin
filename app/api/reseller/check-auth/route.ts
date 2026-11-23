@@ -1,8 +1,14 @@
 // app/api/reseller/check-auth/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { requireReseller } from '@/lib/auth';
 
-export async function GET() {
-  // This endpoint is not needed anymore since we use localStorage
-  // But keeping it for compatibility
-  return NextResponse.json({ authenticated: false });
+export async function GET(req: NextRequest) {
+  const session = requireReseller(req);
+  if (!session) {
+    return NextResponse.json({ authenticated: false }, { status: 200 });
+  }
+  return NextResponse.json(
+    { authenticated: true, username: session.subject },
+    { status: 200 }
+  );
 }

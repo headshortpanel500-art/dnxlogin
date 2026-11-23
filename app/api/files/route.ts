@@ -10,9 +10,10 @@ export async function GET() {
     await connectDB();
 
     const files = await FileMetadata.find({})
-      .sort({ uploadDate: -1 });
+      .sort({ uploadDate: -1 })
+      .lean();
 
-    const formattedFiles = files.map((file: any) => ({
+    const formattedFiles = files.map((file) => ({
       _id: file._id,
       fileId: file.fileId,
       permanentLinkId: file.permanentLinkId,

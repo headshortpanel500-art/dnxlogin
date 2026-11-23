@@ -1,8 +1,14 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import User from '@/models/User';
+import { requireAdmin, unauthorized } from '@/lib/auth';
+import { errMsg } from '@/lib/errors';
 
-export async function POST(req: Request) {
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+export async function POST(req: NextRequest) {
+  if (!requireAdmin(req)) return unauthorized();
   try {
     await dbConnect();
     const { username } = await req.json();
@@ -22,9 +28,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // HWID রিসেট করুন
     user.hwid = null;
     user.hwidReset = true;
+    user.registeredHwids = [];
     await user.save();
 
     return NextResponse.json({
@@ -35,9 +41,9 @@ export async function POST(req: Request) {
         hwidReset: true,
       }
     });
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: errMsg(error) },
       { status: 500 }
     );
   }

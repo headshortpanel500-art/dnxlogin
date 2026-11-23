@@ -1,20 +1,28 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
+// Read the URI lazily. A top-level `throw` here would fire during `next build`,
+// where route modules are imported for static analysis but no database is
+// reachable -- the build would fail on a missing .env.local instead of at the
+// first request, which is where the error actually matters.
+function uri(): string {
+  const value = process.env.MONGODB_URI;
+  if (!value) {
+    throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
+  }
+  return value;
 }
 
-/**
- * Global variable to cache the mongoose connection in development.
- * Prevent multiple connections during Next.js Hot Module Replacement (HMR).
- */
-let cached = (global as any).mongoose;
+type ConnectionCache = {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
+};
 
-if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
-}
+// Cached on globalThis so Next's hot reload does not open a new pool per edit.
+// The cast is confined to this one line instead of leaking `any` through the file.
+const globalForMongoose = globalThis as unknown as { __mongooseCache?: ConnectionCache };
+
+const cached: ConnectionCache =
+  globalForMongoose.__mongooseCache ?? (globalForMongoose.__mongooseCache = { conn: null, promise: null });
 
 async function dbConnect() {
   if (cached.conn) {
@@ -26,9 +34,7 @@ async function dbConnect() {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
-      return mongoose;
-    });
+    cached.promise = mongoose.connect(uri(), opts).then((m) => m);
   }
 
   try {

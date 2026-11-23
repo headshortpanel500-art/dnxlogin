@@ -1,25 +1,30 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI!;
-
-if (!MONGODB_URI) {
-  throw new Error("MONGODB_URI is missing");
+// Same lazy-read rule as lib/dbConnect.ts: nothing may throw at import time, or
+// `next build` fails during page-data collection on a machine without .env.local.
+function uri(): string {
+  const value = process.env.MONGODB_URI;
+  if (!value) {
+    throw new Error("MONGODB_URI is missing");
+  }
+  return value;
 }
 
-let cached = (global as any).mongoose;
+type ConnectionCache = {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
+};
 
-if (!cached) {
-  cached = (global as any).mongoose = {
-    conn: null,
-    promise: null,
-  };
-}
+const globalForMongoose = globalThis as unknown as { __mongooseCache?: ConnectionCache };
+
+const cached: ConnectionCache =
+  globalForMongoose.__mongooseCache ?? (globalForMongoose.__mongooseCache = { conn: null, promise: null });
 
 export async function connectDB() {
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI);
+    cached.promise = mongoose.connect(uri());
   }
 
   cached.conn = await cached.promise;

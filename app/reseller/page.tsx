@@ -41,13 +41,15 @@ import {
   Target,
   Radar,
   Crosshair,
-  Gem
+  Gem,
+  Copy
 } from 'lucide-react';
 
 interface IUser {
   _id: string;
   username: string;
   password?: string;
+  licenseKey?: string | null;
   expiresAt: string;
   createdAt: string;
   hwid?: string | null;
@@ -98,6 +100,11 @@ export default function ResellerDashboard() {
     setTimeout(() => setMessage(null), 4000);
   };
 
+  const copyLicenseKey = (key: string) => {
+    navigator.clipboard.writeText(key);
+    showToast(`License key copied: ${key}`, 'success');
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -107,22 +114,6 @@ export default function ResellerDashboard() {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    const checkAuth = () => {
-      const auth = localStorage.getItem('resellerAuth');
-      const username = localStorage.getItem('resellerUsername');
-      
-      if (auth === 'true' && username) {
-        setIsAuthenticated(true);
-        setResellerInfo({ username });
-        fetchUsers();
-      } else {
-        setIsAuthenticated(false);
-      }
-    };
-    checkAuth();
   }, []);
 
   const handleResellerLogin = async (e: React.FormEvent) => {
@@ -140,11 +131,13 @@ export default function ResellerDashboard() {
       const data = await res.json();
 
       if (data.success) {
-        localStorage.setItem('resellerAuth', 'true');
-        localStorage.setItem('resellerUsername', resellerUsername);
-        
+        // The server set the reseller_session cookie. The stored name is for
+        // display only -- dropping it no longer logs anyone out.
+        const name = data.reseller?.username || resellerUsername;
+        localStorage.setItem('resellerUsername', name);
+
         setIsAuthenticated(true);
-        setResellerInfo({ username: resellerUsername });
+        setResellerInfo({ username: name });
         fetchUsers();
       } else {
         setLoginError(data.error || 'Invalid credentials');
@@ -174,11 +167,15 @@ export default function ResellerDashboard() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const username = localStorage.getItem('resellerUsername');
-      const res = await fetch(`/api/reseller/users?reseller=${username}`);
+      // No query param: the route reads the reseller name from the cookie.
+      const res = await fetch('/api/reseller/users');
       const result = await res.json();
       if (result.success) {
         setUsers(result.data);
+      } else if (res.status === 401) {
+        localStorage.removeItem('resellerAuth');
+        localStorage.removeItem('resellerUsername');
+        setIsAuthenticated(false);
       } else {
         showToast(result.error || 'Failed to fetch users', 'error');
       }
@@ -188,6 +185,31 @@ export default function ResellerDashboard() {
       setLoading(false);
     }
   };
+
+  // Runs once on mount, after fetchUsers is defined. The cookie is the session;
+  // localStorage only carries the display name now.
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/reseller/check-auth');
+        const data = await res.json();
+        if (data.authenticated && data.username) {
+          setIsAuthenticated(true);
+          setResellerInfo({ username: data.username });
+          localStorage.setItem('resellerUsername', data.username);
+          fetchUsers();
+        } else {
+          localStorage.removeItem('resellerAuth');
+          localStorage.removeItem('resellerUsername');
+          setIsAuthenticated(false);
+        }
+      } catch {
+        setIsAuthenticated(false);
+      }
+    };
+    checkAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -855,6 +877,16 @@ export default function ResellerDashboard() {
                             <div className="min-w-0">
                               <p className="text-sm font-bold text-white truncate">{user.username}</p>
                               <p className="text-xs text-white/30 truncate">{user.password || '••••••••'}</p>
+                              {user.licenseKey && (
+                                <button
+                                  onClick={() => copyLicenseKey(user.licenseKey!)}
+                                  className="mt-1 inline-flex items-center gap-1 font-mono text-[10px] text-purple-300/80 hover:text-purple-200 transition"
+                                >
+                                  <Key className="w-3 h-3 flex-shrink-0" />
+                                  <span className="truncate">{user.licenseKey}</span>
+                                  <Copy className="w-3 h-3 opacity-40 flex-shrink-0" />
+                                </button>
+                              )}
                             </div>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
@@ -962,6 +994,7 @@ export default function ResellerDashboard() {
                   <thead>
                     <tr className="bg-black/30 text-white/30 text-xs uppercase tracking-widest border-b border-white/10">
                       <th className="p-4 pl-6 font-medium">User</th>
+                      <th className="p-4 font-medium">License Key</th>
                       <th className="p-4 font-medium">Password</th>
                       <th className="p-4 font-medium">Device Limit</th>
                       <th className="p-4 font-medium">Devices</th>
@@ -974,7 +1007,7 @@ export default function ResellerDashboard() {
                   <tbody className="divide-y divide-white/5">
                     {loading ? (
                       <tr>
-                        <td colSpan={8} className="p-12 text-center text-white/30">
+                        <td colSpan={9} className="p-12 text-center text-white/30">
                           <div className="flex items-center justify-center gap-3">
                             <RefreshCw className="w-5 h-5 text-purple-400 animate-spin" />
                             Loading...
@@ -983,7 +1016,7 @@ export default function ResellerDashboard() {
                       </tr>
                     ) : filteredUsers.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="p-12 text-center text-white/30">
+                        <td colSpan={9} className="p-12 text-center text-white/30">
                           No credentials found. Create your first user above.
                         </td>
                       </tr>
@@ -1004,6 +1037,21 @@ export default function ResellerDashboard() {
                                 </div>
                                 {user.username}
                               </div>
+                            </td>
+                            <td className="p-4">
+                              {user.licenseKey ? (
+                                <button
+                                  onClick={() => copyLicenseKey(user.licenseKey!)}
+                                  title="Copy license key"
+                                  className="inline-flex items-center gap-1.5 font-mono text-xs text-purple-300 hover:text-purple-200 transition"
+                                >
+                                  <Key className="w-3.5 h-3.5 flex-shrink-0" />
+                                  {user.licenseKey}
+                                  <Copy className="w-3 h-3 opacity-40" />
+                                </button>
+                              ) : (
+                                <span className="text-white/20 text-xs">no key</span>
+                              )}
                             </td>
                             <td className="p-4 text-white/30 font-mono text-xs">{user.password || '••••••••'}</td>
                             <td className="p-4">

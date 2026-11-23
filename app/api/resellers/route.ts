@@ -1,13 +1,20 @@
 // app/api/resellers/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import { Reseller } from '@/models/User';
+import { requireAdmin, unauthorized } from '@/lib/auth';
+import { hashPassword } from '@/lib/password';
+import { errMsg } from '@/lib/errors';
 
-// GET all resellers
-export async function GET() {
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+// GET all resellers -- the password hash is stripped before it leaves the box.
+export async function GET(req: NextRequest) {
+  if (!requireAdmin(req)) return unauthorized();
   try {
     await dbConnect();
-    const resellers = await Reseller.find({}).select('-__v');
+    const resellers = await Reseller.find({}).select('-__v -password').sort({ createdAt: -1 });
     return NextResponse.json({ success: true, data: resellers });
   } catch (error) {
     return NextResponse.json(
@@ -18,13 +25,20 @@ export async function GET() {
 }
 
 // POST create reseller
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  if (!requireAdmin(req)) return unauthorized();
   try {
     await dbConnect();
     const body = await req.json();
     const { username, password } = body;
 
-    // Check if reseller exists
+    if (!username || !password) {
+      return NextResponse.json(
+        { success: false, error: 'Username and password are required' },
+        { status: 400 }
+      );
+    }
+
     const existingReseller = await Reseller.findOne({ username });
     if (existingReseller) {
       return NextResponse.json(
@@ -33,27 +47,27 @@ export async function POST(req: Request) {
       );
     }
 
-    // Create reseller
     const reseller = await Reseller.create({
       username,
-      password,
+      password: await hashPassword(password),
     });
 
     return NextResponse.json({
       success: true,
-      data: reseller,
+      data: { _id: reseller._id, username: reseller.username, createdAt: reseller.createdAt },
       message: 'Reseller created successfully',
     });
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to create reseller' },
+      { success: false, error: errMsg(error, 'Failed to create reseller') },
       { status: 500 }
     );
   }
 }
 
 // DELETE reseller
-export async function DELETE(req: Request) {
+export async function DELETE(req: NextRequest) {
+  if (!requireAdmin(req)) return unauthorized();
   try {
     await dbConnect();
     const body = await req.json();
@@ -72,9 +86,9 @@ export async function DELETE(req: Request) {
       success: true,
       message: 'Reseller deleted successfully',
     });
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to delete reseller' },
+      { success: false, error: errMsg(error, 'Failed to delete reseller') },
       { status: 500 }
     );
   }

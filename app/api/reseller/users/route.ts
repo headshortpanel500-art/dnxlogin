@@ -1,24 +1,37 @@
 // app/api/reseller/users/route.ts
-import { NextResponse } from 'next/server';
+//
+// Authentication comes from the reseller_session cookie. The `reseller` query
+// param and body field are still accepted because the dashboard sends them, but
+// they are only cross-checked against the cookie -- never trusted on their own.
+// Before this change any client could read or edit another reseller's users by
+// putting a different name in the URL.
+
+import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import { User } from '@/models/User';
+import { requireReseller, unauthorized } from '@/lib/auth';
+import { hashPassword } from '@/lib/password';
+import { generateLicenseKey } from '@/lib/keys';
+import { errMsg } from '@/lib/errors';
 
-export async function GET(req: Request) {
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+function resolveReseller(req: NextRequest, claimed?: string | null): string | null {
+  const session = requireReseller(req);
+  if (!session) return null;
+  if (claimed && claimed !== session.subject) return null;
+  return session.subject;
+}
+
+export async function GET(req: NextRequest) {
+  const url = new URL(req.url);
+  const reseller = resolveReseller(req, url.searchParams.get('reseller'));
+  if (!reseller) return unauthorized();
+
   try {
     await dbConnect();
-    const url = new URL(req.url);
-    const resellerUsername = url.searchParams.get('reseller');
-
-    if (!resellerUsername) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const users = await User.find({ 
-      createdBy: resellerUsername 
-    }).select('-__v');
+    const users = await User.find({ createdBy: reseller }).select('-__v -password').sort({ createdAt: -1 });
 
     return NextResponse.json({ success: true, data: users });
   } catch (error) {
@@ -29,20 +42,25 @@ export async function GET(req: Request) {
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    await dbConnect();
     const body = await req.json();
-    const { username, password, durationDays, deviceLimit, reseller } = body;
+    const { username, password, durationDays, deviceLimit, reseller: claimed } = body;
 
-    if (!reseller) {
+    // Auth before dbConnect: a missing MONGODB_URI must not turn an
+    // unauthenticated request into a 500 that leaks server state.
+    const reseller = resolveReseller(req, claimed);
+    if (!reseller) return unauthorized();
+
+    if (!username || !password) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: 'Username and password are required' },
+        { status: 400 }
       );
     }
 
-    // Check if user exists
+    await dbConnect();
+
     const existingUser = await User.findOne({ username });
     if (existingUser) {
       return NextResponse.json(
@@ -51,18 +69,19 @@ export async function POST(req: Request) {
       );
     }
 
-    // Calculate expiry date
+    const days = Number(durationDays);
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + durationDays);
+    expiresAt.setDate(expiresAt.getDate() + (Number.isFinite(days) ? days : 30));
 
-    // Create user with reseller info
     const user = await User.create({
       username,
-      password,
+      password: await hashPassword(password),
+      licenseKey: generateLicenseKey(),
       expiresAt,
       deviceLimit: deviceLimit || 0,
       registeredHwids: [],
       createdBy: reseller,
+      createdByReseller: reseller,
     });
 
     return NextResponse.json({
@@ -70,28 +89,25 @@ export async function POST(req: Request) {
       data: user,
       message: 'User created successfully',
     });
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to create user' },
+      { success: false, error: errMsg(error, 'Failed to create user') },
       { status: 500 }
     );
   }
 }
 
-export async function PUT(req: Request) {
+export async function PUT(req: NextRequest) {
   try {
-    await dbConnect();
     const body = await req.json();
-    const { id, username, password, durationDays, deviceLimit, reseller } = body;
+    const { id, username, password, durationDays, deviceLimit, reseller: claimed } = body;
 
-    if (!reseller) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const reseller = resolveReseller(req, claimed);
+    if (!reseller) return unauthorized();
 
-    // Check if user belongs to this reseller
+    await dbConnect();
+
+    // Ownership check: a reseller may only touch accounts they created.
     const existingUser = await User.findById(id);
     if (!existingUser || existingUser.createdBy !== reseller) {
       return NextResponse.json(
@@ -100,18 +116,18 @@ export async function PUT(req: Request) {
       );
     }
 
-    const updateData: any = { username };
-    
+    const updateData: Record<string, unknown> = { username };
+
     if (password) {
-      updateData.password = password;
+      updateData.password = await hashPassword(password);
     }
-    
+
     if (durationDays) {
       const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + durationDays);
+      expiresAt.setDate(expiresAt.getDate() + Number(durationDays));
       updateData.expiresAt = expiresAt;
     }
-    
+
     if (deviceLimit !== undefined) {
       updateData.deviceLimit = deviceLimit;
     }
@@ -123,28 +139,24 @@ export async function PUT(req: Request) {
       data: user,
       message: 'User updated successfully',
     });
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to update user' },
+      { success: false, error: errMsg(error, 'Failed to update user') },
       { status: 500 }
     );
   }
 }
 
-export async function DELETE(req: Request) {
+export async function DELETE(req: NextRequest) {
   try {
-    await dbConnect();
     const body = await req.json();
-    const { id, reseller } = body;
+    const { id, reseller: claimed } = body;
 
-    if (!reseller) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const reseller = resolveReseller(req, claimed);
+    if (!reseller) return unauthorized();
 
-    // Check if user belongs to this reseller
+    await dbConnect();
+
     const existingUser = await User.findById(id);
     if (!existingUser || existingUser.createdBy !== reseller) {
       return NextResponse.json(
@@ -159,9 +171,9 @@ export async function DELETE(req: Request) {
       success: true,
       message: 'User deleted successfully',
     });
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to delete user' },
+      { success: false, error: errMsg(error, 'Failed to delete user') },
       { status: 500 }
     );
   }

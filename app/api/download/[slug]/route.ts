@@ -4,6 +4,7 @@ import { connectDB } from '@/lib/mongodb';
 import { FileMetadata } from '@/models/User';
 import { getGridFSBucket } from '@/lib/gridfs';
 import mongoose from 'mongoose';
+import { errMsg } from '@/lib/errors';
 
 export async function GET(
   req: NextRequest,
@@ -68,13 +69,13 @@ export async function GET(
 
     const readableStream = new ReadableStream({
       start(controller) {
-        downloadStream.on('data', (chunk: any) => {
+        downloadStream.on('data', (chunk: Buffer) => {
           controller.enqueue(chunk);
         });
         downloadStream.on('end', () => {
           controller.close();
         });
-        downloadStream.on('error', (error: any) => {
+        downloadStream.on('error', (error: Error) => {
           console.error('Stream error:', error);
           controller.error(error);
         });
@@ -89,10 +90,10 @@ export async function GET(
       headers,
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Download error:', error);
     return new NextResponse(
-      error.message || 'ডাউনলোড করতে সমস্যা হয়েছে', 
+      errMsg(error, 'ডাউনলোড করতে সমস্যা হয়েছে'),
       { status: 500 }
     );
   }
