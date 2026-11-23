@@ -49,8 +49,14 @@ export async function POST(req: Request) {
     }
 
     // `key` is a license key, but accounts created before licenseKey existed
-    // only have a username, so both are accepted.
-    const user = await User.findOne({ $or: [{ licenseKey: key }, { username: key }] });
+    // only have a username, so both are accepted. The key side matches
+    // case-insensitively and anchored: a customer pasting one out of a chat
+    // client can arrive lowercased, and an unanchored regex would let a short
+    // key match a longer one. The username side stays exact.
+    const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const user = await User.findOne({
+      $or: [{ licenseKey: new RegExp(`^${escaped}$`, 'i') }, { username: key }],
+    });
     if (!user) return fail();
 
     const now = Date.now();
