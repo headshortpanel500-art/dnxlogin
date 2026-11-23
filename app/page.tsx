@@ -1523,7 +1523,7 @@ export default function Home() {
                             const badge =
                               'inline-flex items-center gap-1.5 whitespace-nowrap px-2.5 py-1 rounded-full text-xs font-medium border';
                             const actionBtn =
-                              'inline-flex items-center justify-center gap-1.5 h-8 min-w-8 px-2 rounded-lg border text-xs font-medium transition-all duration-200';
+                              'inline-flex items-center justify-center h-8 w-8 shrink-0 rounded-lg border transition-all duration-200';
 
                             return (
                               <tr key={user._id} className="group hover:bg-white/5 transition duration-200">
@@ -1555,7 +1555,11 @@ export default function Home() {
                                 </td>
 
                                 {/* Password */}
-                                <td className="px-3 py-3 text-white/30 font-mono text-xs">{user.password || '••••••••'}</td>
+                                <td className="px-3 py-3 text-white/30 font-mono text-xs">
+                                  <span className="block max-w-[120px] truncate" title={user.password || ''}>
+                                    {user.password || '••••••••'}
+                                  </span>
+                                </td>
 
                                 {/* Created by */}
                                 <td className="px-3 py-3">
@@ -1571,7 +1575,7 @@ export default function Home() {
                                     ) : (
                                       <Store className="w-3 h-3 shrink-0" />
                                     )}
-                                    {user.createdBy === 'admin' ? 'Admin' : user.createdBy || 'Unknown'}
+                                    <span className="max-w-[120px] truncate">{user.createdBy === 'admin' ? 'Admin' : user.createdBy || 'Unknown'}</span>
                                   </span>
                                 </td>
 
@@ -1672,7 +1676,7 @@ export default function Home() {
                                 </td>
 
                                 {/* Actions — one compact row, pinned to the right while scrolling */}
-                                <td className="sticky right-0 bg-[#12121f] group-hover:bg-[#1a1a2b] transition-colors px-3 py-3 pr-6 text-right shadow-[-12px_0_12px_-12px_rgba(0,0,0,0.6)]">
+                                <td className="sticky right-0 bg-[#12121f] group-hover:bg-[#1a1a2b] transition-colors px-3 py-3 pr-4 text-right shadow-[-12px_0_12px_-12px_rgba(0,0,0,0.6)]">
                                   <div className="flex flex-nowrap items-center justify-end gap-1.5">
                                     <button
                                       onClick={() => handleEdit(user)}
@@ -1681,7 +1685,6 @@ export default function Home() {
                                       className={`${actionBtn} bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 border-purple-500/20`}
                                     >
                                       <Edit className="w-3.5 h-3.5" />
-                                      <span className="hidden 2xl:inline">Edit</span>
                                     </button>
                                     {hasHwid && (
                                       <>
@@ -1692,7 +1695,6 @@ export default function Home() {
                                           className={`${actionBtn} bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 border-blue-500/20`}
                                         >
                                           <Trash2 className="w-3.5 h-3.5" />
-                                          <span className="hidden 2xl:inline">Clear</span>
                                         </button>
                                         <button
                                           onClick={() => handleResetHwid(user.username)}
@@ -1701,7 +1703,6 @@ export default function Home() {
                                           className={`${actionBtn} bg-yellow-500/10 text-yellow-300 hover:bg-yellow-500/20 border-yellow-500/20`}
                                         >
                                           <RefreshCw className="w-3.5 h-3.5" />
-                                          <span className="hidden 2xl:inline">Reset</span>
                                         </button>
                                       </>
                                     )}
@@ -1712,7 +1713,6 @@ export default function Home() {
                                       className={`${actionBtn} bg-red-500/10 text-red-300 hover:bg-red-500/20 border-red-500/20`}
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
-                                      <span className="hidden 2xl:inline">Delete</span>
                                     </button>
                                   </div>
                                 </td>
