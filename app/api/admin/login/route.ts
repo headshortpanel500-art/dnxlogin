@@ -1,15 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ADMIN_COOKIE, cookieOptions, issueToken } from '@/lib/auth';
 import { errMsg } from '@/lib/errors';
+import { asCleanString, checkRateLimit, getClientIp, resetRateLimit, safeStringEqual } from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
   try {
-    const { username, password } = await req.json();
+    const ip = getClientIp(req);
+    const rateKey = `admin-login:${ip}`;
+    const limit = checkRateLimit(rateKey, 10, 10 * 60 * 1000);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { success: false, error: `Too many login attempts. Try again in ${limit.retryAfterSec}s.` },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } }
+      );
+    }
+
+    const body = await req.json();
+    const username = asCleanString(body?.username);
+    const password = typeof body?.password === 'string' ? body.password : null;
+
+    if (!username || !password) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid admin credentials' },
+        { status: 401 }
+      );
+    }
 
     const ADMIN_USER = process.env.ADMIN_USERNAME || 'dynamicx';
     const ADMIN_PASS = process.env.ADMIN_PASSWORD || 'dynamicxtopx';
 
-    if (username === ADMIN_USER && password === ADMIN_PASS) {
+    const userMatch = safeStringEqual(username, ADMIN_USER);
+    const passMatch = safeStringEqual(password, ADMIN_PASS);
+
+    if (userMatch && passMatch) {
       // Checked after the credential match so a wrong password does not reveal
       // whether the deployment is misconfigured.
       if (!process.env.SESSION_SECRET && !process.env.ADMIN_PASSWORD) {
@@ -18,6 +41,8 @@ export async function POST(req: NextRequest) {
           { status: 500 }
         );
       }
+
+      resetRateLimit(rateKey);
 
       const response = NextResponse.json({
         success: true,

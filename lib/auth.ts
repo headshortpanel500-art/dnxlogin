@@ -26,8 +26,12 @@ function mac(payload: string): string {
 
 export function issueToken(role: Role, subject: string, ttlMs = DEFAULT_TTL_MS): string {
   if (!secret()) throw new Error('SESSION_SECRET (or ADMIN_PASSWORD) must be set');
+  const cleanSubject = subject.trim();
+  if (!cleanSubject || cleanSubject.includes('.')) {
+    throw new Error('Invalid session subject');
+  }
   const exp = Date.now() + ttlMs;
-  const payload = `${role}.${subject}.${exp}`;
+  const payload = `${role}.${cleanSubject}.${exp}`;
   return `${payload}.${mac(payload)}`;
 }
 

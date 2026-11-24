@@ -1,42 +1,137 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
-import { Settings } from '@/models/User';
+import User, { Settings } from '@/models/User';
 import { requireAdmin, unauthorized } from '@/lib/auth';
 import { errMsg } from '@/lib/errors';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// GET settings
+const ALLOWED_SETTING_KEYS = new Set([
+  'serverStatus',
+  'maintenanceMessage',
+  'requiredVersion',
+  'updateDownloadUrl',
+  'resellerMaxDeviceLimit',
+  'allowResellerUnlimited',
+  'hwidLockStrictness',
+  'webhookUrl',
+  'webhookAlerts',
+]);
+
+// GET all admin settings + system stats
 export async function GET(req: NextRequest) {
   if (!requireAdmin(req)) return unauthorized();
   try {
+    const startTime = Date.now();
     await dbConnect();
+    const pingMs = Date.now() - startTime;
 
-    const [serverStatus, versionSettings] = await Promise.all([
-      Settings.findOne({ key: 'serverStatus' }),
-      Settings.findOne({ key: 'requiredVersion' })
+    const allDocs = await Settings.find({
+      key: { $in: Array.from(ALLOWED_SETTING_KEYS) },
+    }).lean();
+
+    const settingsMap: Record<string, unknown> = {};
+    for (const doc of allDocs) {
+      settingsMap[doc.key] = doc.value;
+    }
+
+    const [expiredCount, totalDevicesResult] = await Promise.all([
+      User.countDocuments({ expiresAt: { $lt: new Date() } }),
+      User.aggregate([
+        {
+          $project: {
+            deviceCount: {
+              $cond: {
+                if: { $isArray: '$registeredDevices' },
+                then: { $size: '$registeredDevices' },
+                else: { $cond: [{ $ifNull: ['$hwid', false] }, 1, 0] },
+              },
+            },
+          },
+        },
+        { $group: { _id: null, total: { $sum: '$deviceCount' } } },
+      ]),
     ]);
+
+    const totalBoundDevices = totalDevicesResult[0]?.total || 0;
 
     return NextResponse.json({
       success: true,
-      serverStatus: serverStatus ? serverStatus.value : 'online',
-      requiredVersion: versionSettings ? versionSettings.value : '1.0.0',
+      settings: {
+        serverStatus: (settingsMap.serverStatus as string) || 'online',
+        maintenanceMessage:
+          (settingsMap.maintenanceMessage as string) ||
+          'Server undergoing scheduled maintenance. Please check back shortly.',
+        requiredVersion: (settingsMap.requiredVersion as string) || '1.0.0',
+        updateDownloadUrl: (settingsMap.updateDownloadUrl as string) || '',
+        resellerMaxDeviceLimit:
+          typeof settingsMap.resellerMaxDeviceLimit === 'number'
+            ? settingsMap.resellerMaxDeviceLimit
+            : 100,
+        allowResellerUnlimited:
+          typeof settingsMap.allowResellerUnlimited === 'boolean'
+            ? settingsMap.allowResellerUnlimited
+            : true,
+        hwidLockStrictness:
+          (settingsMap.hwidLockStrictness as string) || 'strict',
+        webhookUrl: (settingsMap.webhookUrl as string) || '',
+        webhookAlerts: settingsMap.webhookAlerts || {
+          onLogin: true,
+          onKeyCreated: true,
+          onHwidReset: true,
+        },
+      },
+      diagnostics: {
+        pingMs,
+        expiredCount,
+        totalBoundDevices,
+      },
     });
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch settings' },
+      { success: false, error: errMsg(error, 'Failed to fetch settings') },
       { status: 500 }
     );
   }
 }
 
-// POST update settings
+// POST update settings or run maintenance actions
 export async function POST(req: NextRequest) {
   if (!requireAdmin(req)) return unauthorized();
   try {
     await dbConnect();
     const body = await req.json();
+
+    // Check if this is a maintenance action
+    if (body.action) {
+      if (body.action === 'pruneExpired') {
+        const result = await User.deleteMany({ expiresAt: { $lt: new Date() } });
+        return NextResponse.json({
+          success: true,
+          message: `Pruned ${result.deletedCount || 0} expired licenses.`,
+          deletedCount: result.deletedCount || 0,
+        });
+      }
+
+      if (body.action === 'resetAllHwids') {
+        const result = await User.updateMany(
+          {},
+          { $set: { hwid: null, registeredDevices: [] } }
+        );
+        return NextResponse.json({
+          success: true,
+          message: `Cleared device bindings on ${result.modifiedCount || 0} licenses.`,
+          modifiedCount: result.modifiedCount || 0,
+        });
+      }
+
+      return NextResponse.json(
+        { success: false, error: `Unknown action: ${body.action}` },
+        { status: 400 }
+      );
+    }
+
     const { key, value } = body;
 
     if (!key) {
@@ -46,9 +141,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Only the two keys the panel actually reads. An open upsert let the admin
-    // page write arbitrary documents into the settings collection.
-    if (key !== 'serverStatus' && key !== 'requiredVersion') {
+    if (!ALLOWED_SETTING_KEYS.has(key)) {
       return NextResponse.json(
         { success: false, error: `Unknown setting: ${key}` },
         { status: 400 }
@@ -71,7 +164,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       data: setting,
-      message: 'Settings updated successfully',
+      message: 'Setting updated successfully',
     });
   } catch (error) {
     return NextResponse.json(

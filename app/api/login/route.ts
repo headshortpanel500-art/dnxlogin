@@ -13,7 +13,11 @@ export async function POST(req: NextRequest) {
     await dbConnect();
 
     const body = await req.json();
-    const { username, password, hwid, version, key } = body;
+    const username = typeof body?.username === 'string' ? body.username.trim() : '';
+    const key = typeof body?.key === 'string' ? body.key.trim() : '';
+    const password = typeof body?.password === 'string' ? body.password : '';
+    const hwid = typeof body?.hwid === 'string' ? body.hwid.trim() : '';
+    const version = typeof body?.version === 'string' ? body.version.trim() : '';
 
     // 1. Check if server is online
     const serverSettings = await Settings.findOne({ key: 'serverStatus' });

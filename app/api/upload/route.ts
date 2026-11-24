@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 import { Readable } from 'stream';
 import { randomUUID } from 'crypto';
 import { errMsg } from '@/lib/errors';
+import { requireAdmin, unauthorized } from '@/lib/auth';
 
 // ✅ ফাইলের নাম থেকে স্লাগ তৈরি করার ফাংশন
 function generateSlug(filename: string): string {
@@ -32,6 +33,7 @@ function generateSlug(filename: string): string {
 }
 
 export async function POST(req: NextRequest) {
+  if (!requireAdmin(req)) return unauthorized();
   try {
     await connectDB();
 

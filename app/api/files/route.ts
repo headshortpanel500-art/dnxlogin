@@ -4,8 +4,10 @@ import { connectDB } from '@/lib/mongodb';
 import { FileMetadata } from '@/models/User';
 import { getGridFSBucket } from '@/lib/gridfs';
 import mongoose from 'mongoose';
+import { requireAdmin, unauthorized } from '@/lib/auth';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  if (!requireAdmin(req)) return unauthorized();
   try {
     await connectDB();
 
@@ -41,6 +43,7 @@ export async function GET() {
 }
 
 export async function DELETE(req: NextRequest) {
+  if (!requireAdmin(req)) return unauthorized();
   try {
     await connectDB();
 

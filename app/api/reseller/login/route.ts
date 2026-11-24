@@ -4,15 +4,27 @@ import dbConnect from '@/lib/dbConnect';
 import { Reseller } from '@/models/User';
 import { cookieOptions, issueToken, RESELLER_COOKIE } from '@/lib/auth';
 import { hashPassword, verifyPassword } from '@/lib/password';
+import { asCleanString, checkRateLimit, getClientIp, resetRateLimit } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const rateKey = `reseller-login:${ip}`;
+    const limit = checkRateLimit(rateKey, 12, 10 * 60 * 1000);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { success: false, error: `Too many login attempts. Try again in ${limit.retryAfterSec}s.` },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } }
+      );
+    }
+
     await dbConnect();
     const body = await req.json();
-    const { username, password } = body;
+    const username = asCleanString(body?.username);
+    const password = typeof body?.password === 'string' ? body.password : null;
 
     if (!username || !password) {
       return NextResponse.json(
@@ -32,6 +44,8 @@ export async function POST(req: NextRequest) {
         { status: 401 }
       );
     }
+
+    resetRateLimit(rateKey);
 
     // Upgrade a legacy plaintext password on first successful login.
     if (check.legacy) {
